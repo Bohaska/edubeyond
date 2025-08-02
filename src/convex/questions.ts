@@ -26,60 +26,63 @@ export const generateQuestion = action({
     let prompt = "";
     if (questionType === "MCQ") {
       prompt = `Generate a ${difficulty} multiple-choice question for AP Physics C about ${topic}. 
-      The output must be a valid JSON object with the following keys: 
-      "questionText" (string), 
-      "choices" (an array of 4 strings representing the options A, B, C, D), 
-      "correctChoice" (a string, e.g., "C"), and 
-      "explanation" (a string explaining the answer).
-      Do not include any text outside of the JSON object.`;
+      
+      IMPORTANT: Return ONLY a valid JSON object with exactly these keys:
+      - "questionText": the question as a string
+      - "choices": an array of exactly 4 strings (A, B, C, D options)
+      - "correctChoice": a single letter string ("A", "B", "C", or "D")
+      - "explanation": detailed explanation as a string
+      
+      Example format:
+      {"questionText":"What is the acceleration due to gravity?","choices":["9.8 m/s²","10 m/s²","8.9 m/s²","11 m/s²"],"correctChoice":"A","explanation":"The standard acceleration due to gravity on Earth is 9.8 m/s²."}
+      
+      Return ONLY the JSON object, no other text.`;
     } else {
       prompt = `Generate a ${difficulty} free-response question for AP Physics C about ${topic}. 
-      The output must be a valid JSON object with the following keys: 
-      "questionText" (string), 
-      "answer" (a string with the final answer), and 
-      "explanation" (a string with a detailed, multi-step solution).
-      Do not include any text outside of the JSON object.`;
+      
+      IMPORTANT: Return ONLY a valid JSON object with exactly these keys:
+      - "questionText": the question as a string
+      - "answer": the final numerical/text answer as a string
+      - "explanation": detailed step-by-step solution as a string
+      
+      Example format:
+      {"questionText":"Calculate the force needed to accelerate a 5kg object at 2 m/s².","answer":"10 N","explanation":"Using F = ma, F = 5 kg × 2 m/s² = 10 N"}
+      
+      Return ONLY the JSON object, no other text.`;
     }
 
     try {
       const result = await model.generateContent(prompt);
       const response = await result.response;
-      let text = response.text();
+      let text = response.text().trim();
 
-      // Clean the response to ensure it's a valid JSON string
-      text = text.replace(/[\u0000-\u001F]+/g, "").trim();
+      // Log the raw response for debugging
+      console.log("Raw Gemini response:", text);
 
-      const jsonString = text.includes("{") ? text.substring(text.indexOf("{")) : text;
-      const data = JSON.parse(jsonString);
-
-      // For MCQ, ensure choices and correctChoice are aligned
-      if (questionType === "MCQ") {
-        // Verify choices array length
-        if (!Array.isArray(data.choices) || data.choices.length !== 4) {
-          throw new Error("Invalid choices format");
-        }
-        if (!["A", "B", "C", "D"].includes(data.correctChoice)) {
-          throw new Error("Invalid correctChoice value");
-        }
-        // Map choices labels if necessary
-        // assuming choices come with options labeled A-D
+      // Try to extract JSON more carefully
+      let jsonText = text;
+      
+      // Remove markdown code blocks if present
+      if (jsonText.includes("```")) {
+        jsonText = jsonText.replace(/```[\s\S]*?```/g, "");
       }
 
-      return {
-        questionText: data.questionText,
-        answer: data.answer,
-        explanation: data.explanation,
-        choices: data.choices,
-        correctChoice: data.correctChoice,
-      };
+      // Remove any leading/trailing whitespace
+      jsonText = jsonText.trim();
+
+      // Try to parse the JSON
+      try {
+        const data = JSON.parse(jsonText);
+        return data;
+      } catch (error) {
+        console.error("Failed to parse JSON:", error);
+        throw new Error("Invalid JSON response");
+      }
     } catch (error) {
-      console.error("Error generating content with Gemini:", error);
-      if (error instanceof Error) {
-        throw new Error(`AI Content Generation Failed: ${error.message}`);
-      }
-      throw new Error("Failed to generate question using AI due to an unknown error.");
+      console.error("Failed to generate question:", error);
+      throw new Error("Failed to generate question");
     }
-  },
+  }
 });
 
 // Save a generated question to the database

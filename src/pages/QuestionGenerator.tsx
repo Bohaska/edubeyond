@@ -129,7 +129,7 @@ export default function QuestionGenerator() {
     }
   };
 
-  const filteredQuestions = userQuestions?.filter(q => {
+  const filteredQuestions = userQuestions?.filter((q: any) => {
     return (!selectedTopic || q.topic === selectedTopic) &&
            (!selectedType || q.questionType === selectedType) &&
            (!selectedDifficulty || q.difficulty === selectedDifficulty);
@@ -285,7 +285,7 @@ export default function QuestionGenerator() {
                       No questions found. Generate some questions to build your library!
                     </p>
                   ) : (
-                    filteredQuestions.map((question) => (
+                    filteredQuestions.map((question: any) => (
                       <Card key={question._id} className="p-4">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex gap-2">
@@ -307,7 +307,7 @@ export default function QuestionGenerator() {
                         <p className="font-medium mb-2">{question.questionText}</p>
                         {question.choices && (
                           <div className="mb-2">
-                            {question.choices.map((choice, index) => (
+                            {question.choices.map((choice: string, index: number) => (
                               <p key={index} className="text-sm">
                                 {String.fromCharCode(65 + index)}. {choice}
                               </p>

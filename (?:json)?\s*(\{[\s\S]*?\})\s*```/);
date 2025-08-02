@@ -1,0 +1,145 @@
+// Try to extract JSON more carefully
+let jsonText = text;
+      
+      // Remove markdown code blocks if present
+      if (text.includes('
+')) {
+        const codeBlockMatch = text.match(/```(.*?)```/g);
+        if (codeBlockMatch && codeBlockMatch[1]) {
+          jsonText = codeBlockMatch[1];
+        }
+      }
+      
+      // Find the JSON object boundaries
+      const firstBrace = jsonText.indexOf('{');
+      const lastBrace = jsonText.lastIndexOf('}');
+      
+      if (firstBrace === -1 || lastBrace === -1 || firstBrace >= lastBrace) {
+        throw new Error("No valid JSON object found in response");
+      }
+      
+      jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+      
+      // Log the cleaned JSON for debugging
+      console.log("Cleaned JSON:", jsonText);
+
+      const parsedResponse = JSON.parse(jsonText);
+
+      // Validate the response structure
+      if (!parsedResponse.questionText || !parsedResponse.explanation) {
+        throw new Error("Invalid response structure from AI");
+      }
+
+      if (questionType === "MCQ") {
+        if (!Array.isArray(parsedResponse.choices) || parsedResponse.choices.length !== 4 || !parsedResponse.correctChoice) {
+          throw new Error("Invalid MCQ response structure from AI");
+        }
+      } else {
+        if (!parsedResponse.answer) {
+          throw new Error("Invalid FRQ response structure from AI");
+        }
+      }
+
+      return {
+        questionText: parsedResponse.questionText,
+        answer: parsedResponse.answer || parsedResponse.correctChoice,
+        explanation: parsedResponse.explanation,
+        choices: parsedResponse.choices,
+        correctChoice: parsedResponse.correctChoice,
+      };
+    } catch (error) {
+      console.error("Error generating content with Gemini:", error);
+      if (error instanceof Error) {
+        throw new Error(`AI Content Generation Failed: ${error.message}`);
+      }
+      throw new Error("Failed to generate question using AI due to an unknown error.");
+    }
+  },
+});
+
+// Save a generated question to the database
+export const saveQuestion = mutation({
+  args: {
+    topic: v.string(),
+    questionType: v.string(),
+    difficulty: v.string(),
+    questionText: v.string(),
+    answer: v.string(),
+    explanation: v.string(),
+    choices: v.optional(v.array(v.string())),
+    correctChoice: v.optional(v.string()),
+  },
+  returns: v.id("questions"),
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      throw new Error("User must be authenticated to save questions");
+    }
+
+    const questionId = await ctx.db.insert("questions", {
+      ...args,
+      createdBy: user._id,
+    });
+
+    return questionId;
+  },
+});
+
+// Get questions by topic
+export const getQuestionsByTopic = query({
+  args: { topic: v.string() },
+  returns: v.array(v.object({
+    _id: v.id("questions"),
+    _creationTime: v.number(),
+    topic: v.string(),
+    questionType: v.string(),
+    difficulty: v.string(),
+    questionText: v.string(),
+    answer: v.string(),
+    explanation: v.string(),
+    choices: v.optional(v.array(v.string())),
+    correctChoice: v.optional(v.string()),
+    createdBy: v.id("users"),
+  })),
+  handler: async (ctx, args) => {
+    const questions = await ctx.db
+      .query("questions")
+      .withIndex("by_topic", (q) => q.eq("topic", args.topic))
+      .order("desc")
+      .collect();
+
+    return questions;
+  },
+});
+
+// Get all questions for a user
+export const getUserQuestions = query({
+  args: {},
+  returns: v.array(v.object({
+    _id: v.id("questions"),
+    _creationTime: v.number(),
+    topic: v.string(),
+    questionType: v.string(),
+    difficulty: v.string(),
+    questionText: v.string(),
+    answer: v.string(),
+    explanation: v.string(),
+    choices: v.optional(v.array(v.string())),
+    correctChoice: v.optional(v.string()),
+    createdBy: v.id("users"),
+  })),
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return [];
+    }
+
+    const questions = await ctx.db
+      .query("questions")
+      .withIndex("by_user", (q) => q.eq("createdBy", user._id))
+      .order("desc")
+      .collect();
+
+    return questions;
+  },
+});
