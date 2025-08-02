@@ -17,6 +17,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 
 export default function QuestionGenerator() {
   const [topic, setTopic] = useState("");
@@ -59,24 +60,8 @@ export default function QuestionGenerator() {
         difficulty,
       });
 
-      // Format the result for display
-      let formattedQuestion = `**Topic:** ${topic}\n**Type:** ${questionType}\n**Difficulty:** ${difficulty}\n\n`;
-      formattedQuestion += `**Question:**\n${result.questionText}\n\n`;
-      
-      if (result.choices && result.choices.length > 0) {
-        formattedQuestion += `**Choices:**\n`;
-        result.choices.forEach((choice: string, index: number) => {
-          const letter = String.fromCharCode(65 + index); // A, B, C, D
-          formattedQuestion += `${letter}. ${choice}\n`;
-        });
-        formattedQuestion += `\n**Correct Answer:** ${result.correctChoice}\n\n`;
-      } else {
-        formattedQuestion += `**Answer:** ${result.answer}\n\n`;
-      }
-      
-      formattedQuestion += `**Explanation:**\n${result.explanation}`;
-
-      setGeneratedQuestion(formattedQuestion);
+      // Store the raw result for saving
+      setGeneratedQuestion(result);
       toast.success("Question generated successfully!");
     } catch (error) {
       console.error("Error generating question:", error);
@@ -93,33 +78,15 @@ export default function QuestionGenerator() {
     }
 
     try {
-      // Parse the generated question to extract components
-      const lines = generatedQuestion.split('\n');
-      const questionText = lines.find((line: string) => line.startsWith('**Question:**'))?.replace('**Question:**', '').trim() || '';
-      const answer = lines.find((line: string) => line.startsWith('**Answer:**') || line.startsWith('**Correct Answer:**'))?.replace(/\*\*(Answer|Correct Answer):\*\*/, '').trim() || '';
-      const explanation = generatedQuestion.split('**Explanation:**')[1]?.trim() || '';
-      
-      // Extract choices if it's an MCQ
-      let choices: string[] | undefined;
-      let correctChoice: string | undefined;
-      
-      if (questionType === "MCQ") {
-        const choicesSection = generatedQuestion.split('**Choices:**')[1]?.split('**Correct Answer:**')[0];
-        if (choicesSection) {
-          choices = choicesSection.trim().split('\n').filter((line: string) => line.match(/^[A-D]\./)).map((line: string) => line.substring(3).trim());
-          correctChoice = lines.find((line: string) => line.startsWith('**Correct Answer:**'))?.replace('**Correct Answer:**', '').trim();
-        }
-      }
-
       await saveQuestionMutation({
         topic,
         questionType,
         difficulty,
-        questionText,
-        answer,
-        explanation,
-        choices,
-        correctChoice,
+        questionText: generatedQuestion.questionText,
+        answer: generatedQuestion.answer || generatedQuestion.correctChoice || "",
+        explanation: generatedQuestion.explanation,
+        choices: generatedQuestion.choices,
+        correctChoice: generatedQuestion.correctChoice,
       });
 
       toast.success("Question saved to your library!");
@@ -226,12 +193,50 @@ export default function QuestionGenerator() {
                   <CardTitle>Generated Question</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Textarea
-                    value={generatedQuestion}
-                    readOnly
-                    placeholder="Your generated question will appear here."
-                    className="min-h-[400px] font-mono text-sm"
-                  />
+                  {generatedQuestion ? (
+                    <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                      <div>
+                        <h4 className="font-semibold mb-2">Question:</h4>
+                        <MarkdownRenderer content={generatedQuestion.questionText} />
+                      </div>
+                      
+                      {generatedQuestion.choices && (
+                        <div>
+                          <h4 className="font-semibold mb-2">Choices:</h4>
+                          <div className="space-y-1">
+                            {generatedQuestion.choices.map((choice: string, index: number) => (
+                              <div key={index} className="flex items-start gap-2">
+                                <span className="font-mono text-sm mt-1">
+                                  {String.fromCharCode(65 + index)}.
+                                </span>
+                                <MarkdownRenderer content={choice} className="flex-1" />
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-2">
+                            <span className="font-semibold">Correct Answer: </span>
+                            <span className="font-mono">{generatedQuestion.correctChoice}</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {generatedQuestion.answer && !generatedQuestion.choices && (
+                        <div>
+                          <h4 className="font-semibold mb-2">Answer:</h4>
+                          <MarkdownRenderer content={generatedQuestion.answer} />
+                        </div>
+                      )}
+                      
+                      <div>
+                        <h4 className="font-semibold mb-2">Explanation:</h4>
+                        <MarkdownRenderer content={generatedQuestion.explanation} />
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-center py-8">
+                      Your generated question will appear here with proper mathematical formatting.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -304,20 +309,35 @@ export default function QuestionGenerator() {
                             {new Date(question._creationTime).toLocaleDateString()}
                           </span>
                         </div>
-                        <p className="font-medium mb-2">{question.questionText}</p>
+                        
+                        <div className="mb-2">
+                          <MarkdownRenderer content={question.questionText} />
+                        </div>
+                        
                         {question.choices && (
                           <div className="mb-2">
-                            {question.choices.map((choice: string, index: number) => (
-                              <p key={index} className="text-sm">
-                                {String.fromCharCode(65 + index)}. {choice}
-                              </p>
-                            ))}
-                            <p className="text-sm font-medium mt-1">Answer: {question.correctChoice}</p>
+                            <div className="space-y-1">
+                              {question.choices.map((choice: string, index: number) => (
+                                <div key={index} className="flex items-start gap-2">
+                                  <span className="font-mono text-sm mt-1">
+                                    {String.fromCharCode(65 + index)}.
+                                  </span>
+                                  <MarkdownRenderer content={choice} className="flex-1" />
+                                </div>
+                              ))}
+                            </div>
+                            <div className="mt-2">
+                              <span className="font-semibold">Answer: </span>
+                              <span className="font-mono">{question.correctChoice}</span>
+                            </div>
                           </div>
                         )}
+                        
                         <details className="mt-2">
                           <summary className="cursor-pointer text-sm font-medium">Show Explanation</summary>
-                          <p className="text-sm mt-2 text-muted-foreground">{question.explanation}</p>
+                          <div className="mt-2">
+                            <MarkdownRenderer content={question.explanation} />
+                          </div>
                         </details>
                       </Card>
                     ))

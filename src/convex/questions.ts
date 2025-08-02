@@ -27,14 +27,29 @@ export const generateQuestion = action({
     let schema;
 
     if (questionType === "MCQ") {
-      prompt = `Generate a ${difficulty} multiple-choice question for AP Physics C about ${topic}.`;
+      prompt = `Generate a ${difficulty} multiple-choice question for AP Physics C about ${topic}.
+
+Requirements:
+- Use proper mathematical notation with LaTeX formatting (e.g., $F = ma$, $\\vec{E} = \\frac{kQ}{r^2}$)
+- Include units where appropriate (e.g., m/s², N/C, J)
+- Use subscripts and superscripts for variables (e.g., $v_0$, $x^2$)
+- Format equations clearly with LaTeX
+- Provide 4 distinct answer choices
+- Include a detailed explanation with step-by-step solution using LaTeX for mathematical expressions
+
+Example LaTeX formatting:
+- Force: $F = ma$
+- Electric field: $\\vec{E} = \\frac{kQ}{r^2}$
+- Kinetic energy: $KE = \\frac{1}{2}mv^2$
+- Velocity: $v_f = v_0 + at$`;
+
       schema = {
         type: SchemaType.OBJECT,
         properties: {
-          questionText: { type: SchemaType.STRING, description: "The question text." },
+          questionText: { type: SchemaType.STRING, description: "The question text with LaTeX formatting for mathematical expressions." },
           choices: {
             type: SchemaType.ARRAY,
-            description: "An array of 4 possible answer choices.",
+            description: "An array of 4 possible answer choices with LaTeX formatting.",
             items: { type: SchemaType.STRING },
           },
           correctChoice: {
@@ -43,25 +58,42 @@ export const generateQuestion = action({
           },
           explanation: {
             type: SchemaType.STRING,
-            description: "A detailed explanation of the correct answer.",
+            description: "A detailed explanation with step-by-step solution using LaTeX for mathematical expressions.",
           },
         },
         required: ["questionText", "choices", "correctChoice", "explanation"],
       };
     } else {
       // FRQ
-      prompt = `Generate a ${difficulty} free-response question for AP Physics C about ${topic}.`;
+      prompt = `Generate a ${difficulty} free-response question for AP Physics C about ${topic}.
+
+Requirements:
+- Use proper mathematical notation with LaTeX formatting (e.g., $F = ma$, $\\vec{E} = \\frac{kQ}{r^2}$)
+- Include units in the final answer (e.g., m/s², N/C, J)
+- Use subscripts and superscripts for variables (e.g., $v_0$, $x^2$)
+- Format equations clearly with LaTeX
+- Provide a detailed step-by-step solution with LaTeX for all mathematical expressions
+- Include diagrams descriptions when relevant
+
+Example LaTeX formatting:
+- Force: $F = ma$
+- Electric field: $\\vec{E} = \\frac{kQ}{r^2}$
+- Kinetic energy: $KE = \\frac{1}{2}mv^2$
+- Velocity: $v_f = v_0 + at$
+- Integrals: $\\int_0^t a \\, dt$
+- Derivatives: $\\frac{dv}{dt} = a$`;
+
       schema = {
         type: SchemaType.OBJECT,
         properties: {
-          questionText: { type: SchemaType.STRING, description: "The question text." },
+          questionText: { type: SchemaType.STRING, description: "The question text with LaTeX formatting for mathematical expressions." },
           answer: {
             type: SchemaType.STRING,
-            description: "The final numerical or text answer.",
+            description: "The final numerical answer with units and LaTeX formatting.",
           },
           explanation: {
             type: SchemaType.STRING,
-            description: "A detailed step-by-step solution.",
+            description: "A detailed step-by-step solution using LaTeX for all mathematical expressions.",
           },
         },
         required: ["questionText", "answer", "explanation"],
