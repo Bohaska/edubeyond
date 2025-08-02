@@ -42,6 +42,7 @@ const schema = defineSchema(
       explanation: v.string(), // Step-by-step explanation
       choices: v.optional(v.array(v.string())), // For MCQ options
       correctChoice: v.optional(v.string()), // For MCQ correct answer
+      diagram: v.optional(v.string()), // SVG diagram for the question
       createdBy: v.id("users"), // User who generated the question
     })
       .index("by_topic", ["topic"])

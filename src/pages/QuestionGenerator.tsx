@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
+import { Id } from "@/convex/_generated/dataModel";
+import { Sparkles, Trash2, Image as ImageIcon } from "lucide-react";
 
 export default function QuestionGenerator() {
   const [topic, setTopic] = useState("");
@@ -36,6 +38,11 @@ export default function QuestionGenerator() {
   const [selectedTopic, setSelectedTopic] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState("");
+
+  const generateDiagramAction = useAction(api.diagrams.generateDiagram);
+  const removeDiagramMutation = useMutation(api.diagrams.removeDiagram);
+  const [diagrams, setDiagrams] = useState<Record<string, string | undefined>>({});
+  const [isGeneratingDiagram, setIsGeneratingDiagram] = useState<string | null>(null);
 
   // Initialize datasets on component mount
   useEffect(() => {
@@ -93,6 +100,31 @@ export default function QuestionGenerator() {
     } catch (error) {
       console.error("Error saving question:", error);
       toast.error("Failed to save question.");
+    }
+  };
+
+  const handleGenerateDiagram = async (questionId: Id<"questions">, questionText: string) => {
+    setIsGeneratingDiagram(questionId);
+    try {
+      const diagram = await generateDiagramAction({ questionId, questionText });
+      setDiagrams((prev) => ({ ...prev, [questionId]: diagram }));
+      toast.success("Diagram generated successfully!");
+    } catch (error) {
+      console.error("Error generating diagram:", error);
+      toast.error("Failed to generate diagram.");
+    } finally {
+      setIsGeneratingDiagram(null);
+    }
+  };
+
+  const handleRemoveDiagram = async (questionId: Id<"questions">) => {
+    try {
+      await removeDiagramMutation({ questionId });
+      setDiagrams((prev) => ({ ...prev, [questionId]: undefined }));
+      toast.success("Diagram removed.");
+    } catch (error) {
+      console.error("Error removing diagram:", error);
+      toast.error("Failed to remove diagram.");
     }
   };
 
@@ -314,6 +346,13 @@ export default function QuestionGenerator() {
                         <div className="mb-2">
                           <MarkdownRenderer content={question.questionText} />
                         </div>
+
+                        {question.diagram && (
+                          <div className="my-4 p-2 border rounded-md bg-muted/20">
+                            <h4 className="font-semibold text-sm mb-2">Diagram:</h4>
+                            <div dangerouslySetInnerHTML={{ __html: question.diagram }} />
+                          </div>
+                        )}
                         
                         {question.choices && (
                           <div className="mb-2">
@@ -340,6 +379,34 @@ export default function QuestionGenerator() {
                             <MarkdownRenderer content={question.explanation} />
                           </div>
                         </details>
+
+                        <div className="mt-4 flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleGenerateDiagram(question._id, question.questionText)}
+                            disabled={isGeneratingDiagram === question._id}
+                          >
+                            {isGeneratingDiagram === question._id ? (
+                              "Generating..."
+                            ) : (
+                              <>
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                {question.diagram ? "Regenerate Diagram" : "Add Diagram"}
+                              </>
+                            )}
+                          </Button>
+                          {question.diagram && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleRemoveDiagram(question._id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Remove Diagram
+                            </Button>
+                          )}
+                        </div>
                       </Card>
                     ))
                   )}
