@@ -1,0 +1,7 @@
+        if (codeBlockMatch && codeBlockMatch[1]) {
+          jsonText = codeBlockMatch[1].trim();
+        }
+      }
+      
+      // If no code blocks, find the JSON object boundaries
+      if (!jsonText.includes("
