@@ -97,9 +97,10 @@ export default function QuestionGenerator() {
   };
 
   const filteredQuestions = userQuestions?.filter((q: any) => {
-    return (!selectedTopic || q.topic === selectedTopic) &&
-           (!selectedType || q.questionType === selectedType) &&
-           (!selectedDifficulty || q.difficulty === selectedDifficulty);
+    const topicMatch = (selectedTopic === "" || selectedTopic === "all") ? true : q.topic === selectedTopic;
+    const typeMatch = (selectedType === "" || selectedType === "all") ? true : q.questionType === selectedType;
+    const difficultyMatch = (selectedDifficulty === "" || selectedDifficulty === "all") ? true : q.difficulty === selectedDifficulty;
+    return topicMatch && typeMatch && difficultyMatch;
   }) || [];
 
   return (
@@ -255,7 +256,7 @@ export default function QuestionGenerator() {
                       <SelectValue placeholder="Filter by topic" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Topics</SelectItem>
+                      <SelectItem value="all">All Topics</SelectItem>
                       <SelectItem value="Newton's Laws">Newton's Laws</SelectItem>
                       <SelectItem value="Rotational Motion">Rotational Motion</SelectItem>
                       <SelectItem value="Gauss's Law">Gauss's Law</SelectItem>
@@ -267,7 +268,7 @@ export default function QuestionGenerator() {
                       <SelectValue placeholder="Filter by type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Types</SelectItem>
+                      <SelectItem value="all">All Types</SelectItem>
                       <SelectItem value="MCQ">MCQ</SelectItem>
                       <SelectItem value="FRQ">FRQ</SelectItem>
                     </SelectContent>
@@ -277,7 +278,7 @@ export default function QuestionGenerator() {
                       <SelectValue placeholder="Filter by difficulty" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Difficulties</SelectItem>
+                      <SelectItem value="all">All Difficulties</SelectItem>
                       <SelectItem value="easy">Easy</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
                       <SelectItem value="hard">Hard</SelectItem>
