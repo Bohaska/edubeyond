@@ -1,7 +1,7 @@
 import { Protected } from "@/lib/protected-page";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -12,12 +12,11 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 
 export default function QuestionGenerator() {
   const [topic, setTopic] = useState("");
@@ -26,11 +25,23 @@ export default function QuestionGenerator() {
   const [generatedQuestion, setGeneratedQuestion] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generateQuestion = useAction(api.questions.generateQuestion);
-  const saveQuestion = useMutation(api.questions.saveQuestion);
+  const generateQuestionAction = useAction(api.questions.generateQuestion);
+  const saveQuestionMutation = useMutation(api.questions.saveQuestion);
   const userQuestions = useQuery(api.questions.getUserQuestions);
   const datasets = useQuery(api.datasets.getAllDatasets);
   const initializeDatasets = useMutation(api.datasets.initializeDefaultDatasets);
+
+  const [activeTab, setActiveTab] = useState("generator");
+  const [selectedTopic, setSelectedTopic] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [selectedDifficulty, setSelectedDifficulty] = useState("");
+
+  // Initialize datasets on component mount
+  useEffect(() => {
+    if (datasets && datasets.length === 0) {
+      initializeDatasets();
+    }
+  }, [datasets, initializeDatasets]);
 
   const handleGenerateQuestion = async () => {
     if (!topic || !questionType || !difficulty) {
@@ -39,46 +50,90 @@ export default function QuestionGenerator() {
     }
 
     setIsGenerating(true);
-    setGeneratedQuestion(null);
+    setGeneratedQuestion("");
 
     try {
-      const result = await generateQuestion({ topic, questionType, difficulty });
-      setGeneratedQuestion(result);
+      const result = await generateQuestionAction({
+        topic,
+        questionType,
+        difficulty,
+      });
+
+      // Format the result for display
+      let formattedQuestion = `**Topic:** ${topic}\n**Type:** ${questionType}\n**Difficulty:** ${difficulty}\n\n`;
+      formattedQuestion += `**Question:**\n${result.questionText}\n\n`;
+      
+      if (result.choices && result.choices.length > 0) {
+        formattedQuestion += `**Choices:**\n`;
+        result.choices.forEach((choice: string, index: number) => {
+          const letter = String.fromCharCode(65 + index); // A, B, C, D
+          formattedQuestion += `${letter}. ${choice}\n`;
+        });
+        formattedQuestion += `\n**Correct Answer:** ${result.correctChoice}\n\n`;
+      } else {
+        formattedQuestion += `**Answer:** ${result.answer}\n\n`;
+      }
+      
+      formattedQuestion += `**Explanation:**\n${result.explanation}`;
+
+      setGeneratedQuestion(formattedQuestion);
       toast.success("Question generated successfully!");
     } catch (error) {
+      console.error("Error generating question:", error);
       toast.error("Failed to generate question. Please try again.");
-      console.error("Generation error:", error);
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handleSaveQuestion = async () => {
-    if (!generatedQuestion) return;
+    if (!generatedQuestion) {
+      toast.error("No question to save.");
+      return;
+    }
 
     try {
-      await saveQuestion({
+      // Parse the generated question to extract components
+      const lines = generatedQuestion.split('\n');
+      const questionText = lines.find((line: string) => line.startsWith('**Question:**'))?.replace('**Question:**', '').trim() || '';
+      const answer = lines.find((line: string) => line.startsWith('**Answer:**') || line.startsWith('**Correct Answer:**'))?.replace(/\*\*(Answer|Correct Answer):\*\*/, '').trim() || '';
+      const explanation = generatedQuestion.split('**Explanation:**')[1]?.trim() || '';
+      
+      // Extract choices if it's an MCQ
+      let choices: string[] | undefined;
+      let correctChoice: string | undefined;
+      
+      if (questionType === "MCQ") {
+        const choicesSection = generatedQuestion.split('**Choices:**')[1]?.split('**Correct Answer:**')[0];
+        if (choicesSection) {
+          choices = choicesSection.trim().split('\n').filter((line: string) => line.match(/^[A-D]\./)).map((line: string) => line.substring(3).trim());
+          correctChoice = lines.find((line: string) => line.startsWith('**Correct Answer:**'))?.replace('**Correct Answer:**', '').trim();
+        }
+      }
+
+      await saveQuestionMutation({
         topic,
         questionType,
         difficulty,
-        ...generatedQuestion,
+        questionText,
+        answer,
+        explanation,
+        choices,
+        correctChoice,
       });
-      toast.success("Question saved successfully!");
+
+      toast.success("Question saved to your library!");
     } catch (error) {
+      console.error("Error saving question:", error);
       toast.error("Failed to save question.");
-      console.error("Save error:", error);
     }
   };
 
-  const handleInitializeDatasets = async () => {
-    try {
-      await initializeDatasets();
-      toast.success("Default datasets initialized!");
-    } catch (error) {
-      toast.error("Failed to initialize datasets.");
-      console.error("Initialize error:", error);
-    }
-  };
+  const filteredQuestions = userQuestions?.filter(q => {
+    return (!selectedTopic || q.topic === selectedTopic) &&
+           (!selectedType || q.questionType === selectedType) &&
+           (!selectedDifficulty || q.difficulty === selectedDifficulty);
+  }) || [];
 
   return (
     <Protected>
@@ -86,19 +141,19 @@ export default function QuestionGenerator() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="container mx-auto py-8 max-w-6xl"
+        className="container mx-auto py-8"
       >
         <h1 className="text-3xl font-bold mb-6">AP Physics C Question Generator</h1>
         
-        <Tabs defaultValue="generator" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="generator">Question Generator</TabsTrigger>
+            <TabsTrigger value="generator">Generator</TabsTrigger>
             <TabsTrigger value="library">Question Library</TabsTrigger>
             <TabsTrigger value="datasets">Dataset Catalog</TabsTrigger>
           </TabsList>
 
           <TabsContent value="generator" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <Card>
                 <CardHeader>
                   <CardTitle>Configuration</CardTitle>
@@ -113,15 +168,19 @@ export default function QuestionGenerator() {
                       <SelectContent>
                         <SelectItem value="Newton's Laws">Newton's Laws</SelectItem>
                         <SelectItem value="Rotational Motion">Rotational Motion</SelectItem>
-                        <SelectItem value="Energy and Work">Energy and Work</SelectItem>
-                        <SelectItem value="Momentum">Momentum</SelectItem>
                         <SelectItem value="Oscillations">Oscillations</SelectItem>
+                        <SelectItem value="Gravitation">Gravitation</SelectItem>
+                        <SelectItem value="Fluid Mechanics">Fluid Mechanics</SelectItem>
+                        <SelectItem value="Thermodynamics">Thermodynamics</SelectItem>
+                        <SelectItem value="Electric Fields">Electric Fields</SelectItem>
                         <SelectItem value="Gauss's Law">Gauss's Law</SelectItem>
                         <SelectItem value="Electric Potential">Electric Potential</SelectItem>
                         <SelectItem value="Capacitance">Capacitance</SelectItem>
                         <SelectItem value="Current and Resistance">Current and Resistance</SelectItem>
+                        <SelectItem value="DC Circuits">DC Circuits</SelectItem>
                         <SelectItem value="Magnetic Fields">Magnetic Fields</SelectItem>
                         <SelectItem value="Electromagnetic Induction">Electromagnetic Induction</SelectItem>
+                        <SelectItem value="AC Circuits">AC Circuits</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -150,62 +209,29 @@ export default function QuestionGenerator() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button 
-                    onClick={handleGenerateQuestion} 
-                    disabled={isGenerating}
-                    className="w-full"
-                  >
-                    {isGenerating ? "Generating..." : "Generate Question"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={handleGenerateQuestion} disabled={isGenerating} className="flex-1">
+                      {isGenerating ? "Generating..." : "Generate Question"}
+                    </Button>
+                    {generatedQuestion && (
+                      <Button onClick={handleSaveQuestion} variant="outline">
+                        Save Question
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader>
                   <CardTitle>Generated Question</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {generatedQuestion ? (
-                    <div className="space-y-4">
-                      <div className="flex gap-2 mb-4">
-                        <Badge variant="secondary">{topic}</Badge>
-                        <Badge variant="outline">{questionType}</Badge>
-                        <Badge variant="outline">{difficulty}</Badge>
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-semibold mb-2">Question:</h4>
-                        <p className="text-sm bg-muted p-3 rounded">{generatedQuestion.questionText}</p>
-                      </div>
-
-                      {generatedQuestion.choices && (
-                        <div>
-                          <h4 className="font-semibold mb-2">Answer Choices:</h4>
-                          <div className="space-y-1">
-                            {generatedQuestion.choices.map((choice: string, index: number) => (
-                              <p key={index} className="text-sm bg-muted p-2 rounded">{choice}</p>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div>
-                        <h4 className="font-semibold mb-2">Answer:</h4>
-                        <p className="text-sm bg-green-50 p-3 rounded border border-green-200">{generatedQuestion.answer}</p>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold mb-2">Explanation:</h4>
-                        <p className="text-sm bg-blue-50 p-3 rounded border border-blue-200 whitespace-pre-line">{generatedQuestion.explanation}</p>
-                      </div>
-
-                      <Button onClick={handleSaveQuestion} className="w-full">
-                        Save Question to Library
-                      </Button>
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">Your generated question will appear here.</p>
-                  )}
+                  <Textarea
+                    value={generatedQuestion}
+                    readOnly
+                    placeholder="Your generated question will appear here."
+                    className="min-h-[400px] font-mono text-sm"
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -214,29 +240,89 @@ export default function QuestionGenerator() {
           <TabsContent value="library" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Your Question Library</CardTitle>
+                <CardTitle>Question Library</CardTitle>
+                <CardDescription>Browse and filter your saved questions</CardDescription>
               </CardHeader>
               <CardContent>
-                {userQuestions && userQuestions.length > 0 ? (
-                  <div className="space-y-4">
-                    {userQuestions.map((question) => (
-                      <div key={question._id} className="border rounded p-4 space-y-2">
-                        <div className="flex gap-2 mb-2">
-                          <Badge variant="secondary">{question.topic}</Badge>
-                          <Badge variant="outline">{question.questionType}</Badge>
-                          <Badge variant="outline">{question.difficulty}</Badge>
+                <div className="flex gap-4 mb-6">
+                  <Select onValueChange={setSelectedTopic} value={selectedTopic}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Filter by topic" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Topics</SelectItem>
+                      <SelectItem value="Newton's Laws">Newton's Laws</SelectItem>
+                      <SelectItem value="Rotational Motion">Rotational Motion</SelectItem>
+                      <SelectItem value="Gauss's Law">Gauss's Law</SelectItem>
+                      <SelectItem value="Electromagnetic Induction">Electromagnetic Induction</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select onValueChange={setSelectedType} value={selectedType}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Filter by type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Types</SelectItem>
+                      <SelectItem value="MCQ">MCQ</SelectItem>
+                      <SelectItem value="FRQ">FRQ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select onValueChange={setSelectedDifficulty} value={selectedDifficulty}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Filter by difficulty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Difficulties</SelectItem>
+                      <SelectItem value="easy">Easy</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="hard">Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-4">
+                  {filteredQuestions.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">
+                      No questions found. Generate some questions to build your library!
+                    </p>
+                  ) : (
+                    filteredQuestions.map((question) => (
+                      <Card key={question._id} className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex gap-2">
+                            <Badge variant="secondary">{question.topic}</Badge>
+                            <Badge variant={question.questionType === "MCQ" ? "default" : "outline"}>
+                              {question.questionType}
+                            </Badge>
+                            <Badge variant={
+                              question.difficulty === "easy" ? "secondary" :
+                              question.difficulty === "medium" ? "default" : "destructive"
+                            }>
+                              {question.difficulty}
+                            </Badge>
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(question._creationTime).toLocaleDateString()}
+                          </span>
                         </div>
-                        <p className="text-sm font-medium">{question.questionText}</p>
-                        <Separator />
-                        <p className="text-xs text-muted-foreground">
-                          Created: {new Date(question._creationTime).toLocaleDateString()}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No questions saved yet. Generate and save some questions to build your library!</p>
-                )}
+                        <p className="font-medium mb-2">{question.questionText}</p>
+                        {question.choices && (
+                          <div className="mb-2">
+                            {question.choices.map((choice, index) => (
+                              <p key={index} className="text-sm">
+                                {String.fromCharCode(65 + index)}. {choice}
+                              </p>
+                            ))}
+                            <p className="text-sm font-medium mt-1">Answer: {question.correctChoice}</p>
+                          </div>
+                        )}
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-sm font-medium">Show Explanation</summary>
+                          <p className="text-sm mt-2 text-muted-foreground">{question.explanation}</p>
+                        </details>
+                      </Card>
+                    ))
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -245,65 +331,66 @@ export default function QuestionGenerator() {
             <Card>
               <CardHeader>
                 <CardTitle>Dataset Catalog</CardTitle>
-                <Button onClick={handleInitializeDatasets} variant="outline" size="sm">
-                  Initialize Default Datasets
-                </Button>
+                <CardDescription>Explore curated physics resources and question databases</CardDescription>
               </CardHeader>
               <CardContent>
-                {datasets && datasets.length > 0 ? (
-                  <div className="space-y-6">
-                    {datasets.map((dataset) => (
-                      <div key={dataset._id} className="border rounded p-4 space-y-3">
-                        <div className="flex items-start justify-between">
-                          <h3 className="font-semibold text-lg">{dataset.name}</h3>
-                          <a 
-                            href={dataset.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline text-sm"
-                          >
-                            Visit Resource
-                          </a>
-                        </div>
-                        
-                        <p className="text-sm text-muted-foreground">{dataset.description}</p>
-                        
-                        <div className="space-y-2">
-                          <div>
-                            <span className="font-medium text-sm">Question Types: </span>
-                            <div className="flex gap-1 flex-wrap mt-1">
-                              {dataset.questionTypes.map((type, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">{type}</Badge>
-                              ))}
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <span className="font-medium text-sm">Topics: </span>
-                            <div className="flex gap-1 flex-wrap mt-1">
-                              {dataset.topics.map((topic, index) => (
-                                <Badge key={index} variant="secondary" className="text-xs">{topic}</Badge>
-                              ))}
-                            </div>
+                <div className="space-y-4">
+                  {datasets?.map((dataset) => (
+                    <Card key={dataset._id} className="p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-semibold">{dataset.name}</h3>
+                        <a 
+                          href={dataset.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline text-sm"
+                        >
+                          Visit Resource
+                        </a>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">{dataset.description}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <h4 className="font-medium mb-1">Question Types:</h4>
+                          <div className="flex flex-wrap gap-1">
+                            {dataset.questionTypes.map((type, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {type}
+                              </Badge>
+                            ))}
                           </div>
                         </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="font-medium text-green-700">Strengths:</span>
-                            <p className="text-muted-foreground mt-1">{dataset.strengths}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-orange-700">Limitations:</span>
-                            <p className="text-muted-foreground mt-1">{dataset.limitations}</p>
+                        <div>
+                          <h4 className="font-medium mb-1">Topics Covered:</h4>
+                          <div className="flex flex-wrap gap-1">
+                            {dataset.topics.slice(0, 3).map((topic, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {topic}
+                              </Badge>
+                            ))}
+                            {dataset.topics.length > 3 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{dataset.topics.length - 3} more
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No datasets cataloged yet. Click "Initialize Default Datasets" to get started!</p>
-                )}
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <h4 className="font-medium text-green-700 mb-1">Strengths:</h4>
+                          <p className="text-muted-foreground">{dataset.strengths}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-orange-700 mb-1">Limitations:</h4>
+                          <p className="text-muted-foreground">{dataset.limitations}</p>
+                        </div>
+                      </div>
+                    </Card>
+                  )) || (
+                    <p className="text-center text-muted-foreground py-8">Loading datasets...</p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

@@ -1,6 +1,9 @@
 import { v } from "convex/values";
 import { action, mutation, query } from "./_generated/server";
 import { getCurrentUser } from "./users";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 // Generate a question using AI (this will be an action since it calls external APIs)
 export const generateQuestion = action({
@@ -17,35 +20,65 @@ export const generateQuestion = action({
     correctChoice: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
-    // This is a placeholder for AI generation
-    // In a real implementation, you would call OpenAI API here
     const { topic, questionType, difficulty } = args;
-    
-    // Simulate AI generation with structured prompts
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
     let prompt = "";
     if (questionType === "MCQ") {
       prompt = `Generate a ${difficulty} multiple-choice question for AP Physics C about ${topic}. 
-      Include 4 answer choices (A, B, C, D) and identify the correct one. 
-      Provide a brief explanation of why the correct answer is right.
-      Format: Question text, then choices, then correct answer, then explanation.`;
+      The output must be a valid JSON object with the following keys: 
+      "questionText" (string), 
+      "choices" (an array of 4 strings representing the options A, B, C, D), 
+      "correctChoice" (a string, e.g., "C"), and 
+      "explanation" (a string explaining the answer).
+      Do not include any text outside of the JSON object.`;
     } else {
       prompt = `Generate a ${difficulty} free-response question for AP Physics C about ${topic}. 
-      Provide a multi-step solution with detailed reasoning and mathematical derivations.
-      Format: Question text, then step-by-step solution with explanations.`;
+      The output must be a valid JSON object with the following keys: 
+      "questionText" (string), 
+      "answer" (a string with the final answer), and 
+      "explanation" (a string with a detailed, multi-step solution).
+      Do not include any text outside of the JSON object.`;
     }
 
-    // Placeholder response - in real implementation, call OpenAI API
-    const mockResponse = {
-      questionText: `A ${difficulty} ${questionType} question about ${topic}: A particle moves in a circular path with radius 2.0 m. If the centripetal acceleration is 8.0 m/s², what is the speed of the particle?`,
-      answer: questionType === "MCQ" ? "C" : "4.0 m/s",
-      explanation: questionType === "MCQ" 
-        ? "Using the formula a_c = v²/r, we can solve for v: v = √(a_c × r) = √(8.0 × 2.0) = √16 = 4.0 m/s"
-        : "Step 1: Identify the given values: r = 2.0 m, a_c = 8.0 m/s²\nStep 2: Apply the centripetal acceleration formula: a_c = v²/r\nStep 3: Solve for velocity: v = √(a_c × r) = √(8.0 × 2.0) = 4.0 m/s",
-      choices: questionType === "MCQ" ? ["A) 2.0 m/s", "B) 3.0 m/s", "C) 4.0 m/s", "D) 6.0 m/s"] : undefined,
-      correctChoice: questionType === "MCQ" ? "C" : undefined,
-    };
+    try {
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      let text = response.text();
 
-    return mockResponse;
+      // Clean the response to ensure it's a valid JSON string
+      text = text.replace(/[\u0000-\u001F]+/g, "").trim();
+
+      const jsonString = text.includes("{") ? text.substring(text.indexOf("{")) : text;
+      const data = JSON.parse(jsonString);
+
+      // For MCQ, ensure choices and correctChoice are aligned
+      if (questionType === "MCQ") {
+        // Verify choices array length
+        if (!Array.isArray(data.choices) || data.choices.length !== 4) {
+          throw new Error("Invalid choices format");
+        }
+        if (!["A", "B", "C", "D"].includes(data.correctChoice)) {
+          throw new Error("Invalid correctChoice value");
+        }
+        // Map choices labels if necessary
+        // assuming choices come with options labeled A-D
+      }
+
+      return {
+        questionText: data.questionText,
+        answer: data.answer,
+        explanation: data.explanation,
+        choices: data.choices,
+        correctChoice: data.correctChoice,
+      };
+    } catch (error) {
+      console.error("Error generating content with Gemini:", error);
+      if (error instanceof Error) {
+        throw new Error(`AI Content Generation Failed: ${error.message}`);
+      }
+      throw new Error("Failed to generate question using AI due to an unknown error.");
+    }
   },
 });
 
@@ -99,7 +132,7 @@ export const getQuestionsByTopic = query({
       .withIndex("by_topic", (q) => q.eq("topic", args.topic))
       .order("desc")
       .collect();
-    
+
     return questions;
   },
 });
@@ -131,7 +164,7 @@ export const getUserQuestions = query({
       .withIndex("by_user", (q) => q.eq("createdBy", user._id))
       .order("desc")
       .collect();
-    
+
     return questions;
   },
 });
