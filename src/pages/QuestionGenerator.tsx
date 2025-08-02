@@ -38,7 +38,7 @@ export default function QuestionGenerator() {
 
   // Initialize datasets on component mount
   useEffect(() => {
-    if (datasets && datasets.length === 0) {
+    if (datasets?.length === 0) {
       initializeDatasets();
     }
   }, [datasets, initializeDatasets]);

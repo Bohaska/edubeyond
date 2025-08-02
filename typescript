@@ -1,0 +1,6 @@
+  // Initialize datasets on component mount
+  useEffect(() => {
+    if (datasets && datasets.length === 0) {
+      initializeDatasets();
+    }
+  }, [datasets, initializeDatasets]);
