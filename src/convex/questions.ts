@@ -21,7 +21,7 @@ export const generateQuestion = action({
   }),
   handler: async (ctx, args) => {
     const { topic, questionType, difficulty } = args;
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     let prompt = "";
     if (questionType === "MCQ") {
