@@ -32,12 +32,34 @@ const schema = defineSchema(
       role: v.optional(roleValidator), // role of the user. do not remove
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
-    // add other tables here
+    // Questions table for storing generated AP Physics C questions
+    questions: defineTable({
+      topic: v.string(), // e.g., "Newton's Laws", "Gauss's Law"
+      questionType: v.string(), // "MCQ" or "FRQ"
+      difficulty: v.string(), // "easy", "medium", "hard"
+      questionText: v.string(), // The actual question content
+      answer: v.string(), // The correct answer or solution
+      explanation: v.string(), // Step-by-step explanation
+      choices: v.optional(v.array(v.string())), // For MCQ options
+      correctChoice: v.optional(v.string()), // For MCQ correct answer
+      createdBy: v.id("users"), // User who generated the question
+    })
+      .index("by_topic", ["topic"])
+      .index("by_user", ["createdBy"])
+      .index("by_type", ["questionType"])
+      .index("by_difficulty", ["difficulty"]),
 
-    // tableName: defineTable({
-    //   ...
-    //   // table fields
-    // }).index("by_field", ["field"])
+    // Dataset catalog for tracking explored resources
+    datasets: defineTable({
+      name: v.string(), // e.g., "OpenStax College Physics"
+      url: v.string(), // Resource URL
+      description: v.string(), // Description of the dataset
+      questionTypes: v.array(v.string()), // Types of questions available
+      topics: v.array(v.string()), // Topics covered
+      strengths: v.string(), // Strengths of the resource
+      limitations: v.string(), // Limitations noted
+      addedBy: v.id("users"), // User who cataloged this resource
+    }).index("by_user", ["addedBy"]),
   },
   {
     schemaValidation: false,
