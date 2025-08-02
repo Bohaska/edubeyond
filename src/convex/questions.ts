@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { action, mutation, query } from "./_generated/server";
 import { getCurrentUser } from "./users";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -23,64 +23,81 @@ export const generateQuestion = action({
     const { topic, questionType, difficulty } = args;
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    let prompt = "";
+    let prompt: string;
+    let schema;
+
     if (questionType === "MCQ") {
-      prompt = `Generate a ${difficulty} multiple-choice question for AP Physics C about ${topic}. 
-      
-      IMPORTANT: Return ONLY a valid JSON object with exactly these keys:
-      - "questionText": the question as a string
-      - "choices": an array of exactly 4 strings (A, B, C, D options)
-      - "correctChoice": a single letter string ("A", "B", "C", or "D")
-      - "explanation": detailed explanation as a string
-      
-      Example format:
-      {"questionText":"What is the acceleration due to gravity?","choices":["9.8 m/s²","10 m/s²","8.9 m/s²","11 m/s²"],"correctChoice":"A","explanation":"The standard acceleration due to gravity on Earth is 9.8 m/s²."}
-      
-      Return ONLY the JSON object, no other text.`;
+      prompt = `Generate a ${difficulty} multiple-choice question for AP Physics C about ${topic}.`;
+      schema = {
+        type: SchemaType.OBJECT,
+        properties: {
+          questionText: { type: SchemaType.STRING, description: "The question text." },
+          choices: {
+            type: SchemaType.ARRAY,
+            description: "An array of 4 possible answer choices.",
+            items: { type: SchemaType.STRING },
+          },
+          correctChoice: {
+            type: SchemaType.STRING,
+            description: "The correct answer choice from the 'choices' array.",
+          },
+          explanation: {
+            type: SchemaType.STRING,
+            description: "A detailed explanation of the correct answer.",
+          },
+        },
+        required: ["questionText", "choices", "correctChoice", "explanation"],
+      };
     } else {
-      prompt = `Generate a ${difficulty} free-response question for AP Physics C about ${topic}. 
-      
-      IMPORTANT: Return ONLY a valid JSON object with exactly these keys:
-      - "questionText": the question as a string
-      - "answer": the final numerical/text answer as a string
-      - "explanation": detailed step-by-step solution as a string
-      
-      Example format:
-      {"questionText":"Calculate the force needed to accelerate a 5kg object at 2 m/s².","answer":"10 N","explanation":"Using F = ma, F = 5 kg × 2 m/s² = 10 N"}
-      
-      Return ONLY the JSON object, no other text.`;
+      // FRQ
+      prompt = `Generate a ${difficulty} free-response question for AP Physics C about ${topic}.`;
+      schema = {
+        type: SchemaType.OBJECT,
+        properties: {
+          questionText: { type: SchemaType.STRING, description: "The question text." },
+          answer: {
+            type: SchemaType.STRING,
+            description: "The final numerical or text answer.",
+          },
+          explanation: {
+            type: SchemaType.STRING,
+            description: "A detailed step-by-step solution.",
+          },
+        },
+        required: ["questionText", "answer", "explanation"],
+      };
     }
 
     try {
-      const result = await model.generateContent(prompt);
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: schema as any,
+        },
+      });
+
       const response = await result.response;
-      let text = response.text().trim();
+      const jsonText = response.text();
+      console.log("Gemini JSON response:", jsonText);
 
-      // Log the raw response for debugging
-      console.log("Raw Gemini response:", text);
+      const parsedResponse = JSON.parse(jsonText);
 
-      // Try to extract JSON more carefully
-      let jsonText = text;
-      
-      // Remove markdown code blocks if present
-      if (jsonText.includes("```")) {
-        jsonText = jsonText.replace(/```[\s\S]*?```/g, "");
-      }
-
-      // Remove any leading/trailing whitespace
-      jsonText = jsonText.trim();
-
-      // Try to parse the JSON
-      try {
-        const data = JSON.parse(jsonText);
-        return data;
-      } catch (error) {
-        console.error("Failed to parse JSON:", error);
-        throw new Error("Invalid JSON response");
-      }
+      return {
+        questionText: parsedResponse.questionText,
+        answer: parsedResponse.answer || parsedResponse.correctChoice,
+        explanation: parsedResponse.explanation,
+        choices: parsedResponse.choices,
+        correctChoice: parsedResponse.correctChoice,
+      };
     } catch (error) {
-      console.error("Failed to generate question:", error);
-      throw new Error("Failed to generate question");
+      console.error("Error generating content with Gemini:", error);
+      if (error instanceof Error) {
+        throw new Error(`AI Content Generation Failed: ${error.message}`);
+      }
+      throw new Error(
+        "Failed to generate question using AI due to an unknown error.",
+      );
     }
   }
 });
