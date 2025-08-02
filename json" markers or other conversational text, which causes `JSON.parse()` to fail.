@@ -1,0 +1,6 @@
+
+I will update the `generateQuestion` action in `src/convex/questions.ts` to more robustly clean the API response before parsing it.
+
+Here is the updated code:
+
+EDIT FILE
