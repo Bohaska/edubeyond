@@ -176,6 +176,7 @@ export const getQuestionsByTopic = query({
     explanation: v.string(),
     choices: v.optional(v.array(v.string())),
     correctChoice: v.optional(v.string()),
+    diagram: v.optional(v.string()),
     createdBy: v.id("users"),
   })),
   handler: async (ctx, args) => {
@@ -203,6 +204,7 @@ export const getUserQuestions = query({
     explanation: v.string(),
     choices: v.optional(v.array(v.string())),
     correctChoice: v.optional(v.string()),
+    diagram: v.optional(v.string()),
     createdBy: v.id("users"),
   })),
   handler: async (ctx) => {
