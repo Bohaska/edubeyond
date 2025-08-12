@@ -81,7 +81,10 @@ export const sendMessage = action({
             role: "model" as const,
         });
 
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-2.5-flash", 
+            tools: [{ functionDeclarations: [searchResourcesTool] }]
+        });
         const chat = model.startChat({
             history: [
                 {
@@ -179,18 +182,18 @@ const searchResourcesTool = {
     name: 'search_resources',
     description: 'Search for relevant AP Physics C resources including videos, simulations, guidesheets, and links.',
     parameters: {
-        type: "OBJECT",
+        type: 'object' as const,
         properties: {
             query: {
-                type: "STRING",
+                type: 'string' as const,
                 description: 'Search query for finding resources (e.g., "capacitors", "kinematics", "electric field")',
             },
             type: {
-                type: "STRING",
+                type: 'string' as const,
                 enum: ["video", "simulation", "guidesheet", "link"],
                 description: 'Optional: Filter by resource type',
             },
         },
         required: ['query'],
     },
-};
+} as const;
