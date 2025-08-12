@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 
 export const get = query({
     args: { id: v.id("resources") },
@@ -357,45 +358,110 @@ export const seedMoreResources = mutation({
 export const seedPhetSimulations = mutation({
     args: {},
     handler: async (ctx) => {
-        const phetCategoryId = await ctx.db.insert("resources", {
-            name: "Phet Physics Simulations",
-            type: "category",
-            parentId: undefined,
-            order: 3,
-        });
+        const phetCategory = await ctx.db
+            .query("resources")
+            .filter((q) => q.eq(q.field("name"), "Phet Simulations"))
+            .unique();
+
+        let phetCategoryId: Id<"resources"> | undefined;
+
+        if (phetCategory) {
+            phetCategoryId = phetCategory._id;
+            // Get all existing simulations and delete them to avoid duplicates
+            const existingSimulations = await ctx.db
+                .query("resources")
+                .withIndex("by_parent_and_order", (q) => q.eq("parentId", phetCategoryId))
+                .collect();
+            for (const sim of existingSimulations) {
+                await ctx.db.delete(sim._id);
+            }
+        } else {
+            phetCategoryId = await ctx.db.insert("resources", {
+                name: "Phet Physics Simulations",
+                type: "category",
+                parentId: undefined,
+                order: 3,
+            });
+        }
 
         const simulations = [
             { name: "2D Motion", imageUrl: "https://phet.colorado.edu/sims/html/motion-2d/latest/motion-2d-600.png", url: "https://phet.colorado.edu/en/simulations/motion-2d" },
+            { name: "Alpha Decay", imageUrl: "https://phet.colorado.edu/sims/html/alpha-decay/latest/alpha-decay-600.png", url: "https://phet.colorado.edu/en/simulations/alpha-decay" },
+            { name: "Atomic Interactions", imageUrl: "https://phet.colorado.edu/sims/html/atomic-interactions/latest/atomic-interactions-600.png", url: "https://phet.colorado.edu/en/simulations/atomic-interactions" },
             { name: "Balancing Act", imageUrl: "https://phet.colorado.edu/sims/html/balancing-act/latest/balancing-act-600.png", url: "https://phet.colorado.edu/en/simulations/balancing-act" },
+            { name: "Balloons and Static Electricity", imageUrl: "https://phet.colorado.edu/sims/html/balloons-and-static-electricity/latest/balloons-and-static-electricity-600.png", url: "https://phet.colorado.edu/en/simulations/balloons-and-static-electricity" },
+            { name: "Bending Light", imageUrl: "https://phet.colorado.edu/sims/html/bending-light/latest/bending-light-600.png", url: "https://phet.colorado.edu/en/simulations/bending-light" },
+            { name: "Beta Decay", imageUrl: "https://phet.colorado.edu/sims/html/beta-decay/latest/beta-decay-600.png", url: "https://phet.colorado.edu/en/simulations/beta-decay" },
+            { name: "Blackbody Spectrum", imageUrl: "https://phet.colorado.edu/sims/html/blackbody-spectrum/latest/blackbody-spectrum-600.png", url: "https://phet.colorado.edu/en/simulations/blackbody-spectrum" },
+            { name: "Build a Nucleus", imageUrl: "https://phet.colorado.edu/sims/html/build-a-nucleus/latest/build-a-nucleus-600.png", url: "https://phet.colorado.edu/en/simulations/build-a-nucleus" },
             { name: "Calculus Grapher", imageUrl: "https://phet.colorado.edu/sims/html/calculus-grapher/latest/calculus-grapher-600.png", url: "https://phet.colorado.edu/en/simulations/calculus-grapher" },
+            { name: "Capacitor Lab: Basics", imageUrl: "https://phet.colorado.edu/sims/html/capacitor-lab-basics/latest/capacitor-lab-basics-600.png", url: "https://phet.colorado.edu/en/simulations/capacitor-lab-basics" },
             { name: "Charges and Fields", imageUrl: "https://phet.colorado.edu/sims/html/charges-and-fields/latest/charges-and-fields-600.png", url: "https://phet.colorado.edu/en/simulations/charges-and-fields" },
-            { name: "Circuit Construction Kit: DC", imageUrl: "https://phet.colorado.edu/sims/html/circuit-construction-kit-dc/latest/circuit-construction-kit-dc-600.png", url: "https://phet.colorado.edu/en/simulations/circuit-construction-kit-dc" },
             { name: "Circuit Construction Kit: AC", imageUrl: "https://phet.colorado.edu/sims/html/circuit-construction-kit-ac/latest/circuit-construction-kit-ac-600.png", url: "https://phet.colorado.edu/en/simulations/circuit-construction-kit-ac" },
+            { name: "Circuit Construction Kit: DC", imageUrl: "https://phet.colorado.edu/sims/html/circuit-construction-kit-dc/latest/circuit-construction-kit-dc-600.png", url: "https://phet.colorado.edu/en/simulations/circuit-construction-kit-dc" },
             { name: "Collision Lab", imageUrl: "https://phet.colorado.edu/sims/html/collision-lab/latest/collision-lab-600.png", url: "https://phet.colorado.edu/en/simulations/collision-lab" },
             { name: "Color Vision", imageUrl: "https://phet.colorado.edu/sims/html/color-vision/latest/color-vision-600.png", url: "https://phet.colorado.edu/en/simulations/color-vision" },
+            { name: "Coulomb's Law", imageUrl: "https://phet.colorado.edu/sims/html/coulombs-law/latest/coulombs-law-600.png", url: "https://phet.colorado.edu/en/simulations/coulombs-law" },
+            { name: "Curve Fitting", imageUrl: "https://phet.colorado.edu/sims/html/curve-fitting/latest/curve-fitting-600.png", url: "https://phet.colorado.edu/en/simulations/curve-fitting" },
+            { name: "Davisson-Germer: Electron Diffraction", imageUrl: "https://phet.colorado.edu/sims/html/davisson-germer-electron-diffraction/latest/davisson-germer-electron-diffraction-600.png", url: "https://phet.colorado.edu/en/simulations/davisson-germer-electron-diffraction" },
+            { name: "Diffusion", imageUrl: "https://phet.colorado.edu/sims/html/diffusion/latest/diffusion-600.png", url: "https://phet.colorado.edu/en/simulations/diffusion" },
+            { name: "Energy Forms and Changes", imageUrl: "https://phet.colorado.edu/sims/html/energy-forms-and-changes/latest/energy-forms-and-changes-600.png", url: "https://phet.colorado.edu/en/simulations/energy-forms-and-changes" },
             { name: "Energy Skate Park", imageUrl: "https://phet.colorado.edu/sims/html/energy-skate-park/latest/energy-skate-park-600.png", url: "https://phet.colorado.edu/en/simulations/energy-skate-park" },
+            { name: "Energy Skate Park: Basics", imageUrl: "https://phet.colorado.edu/sims/html/energy-skate-park-basics/latest/energy-skate-park-basics-600.png", url: "https://phet.colorado.edu/en/simulations/energy-skate-park-basics" },
+            { name: "Faraday's Electromagnetic Lab", imageUrl: "https://phet.colorado.edu/sims/html/faradays-electromagnetic-lab/latest/faradays-electromagnetic-lab-600.png", url: "https://phet.colorado.edu/en/simulations/faradays-electromagnetic-lab" },
             { name: "Faraday's Law", imageUrl: "https://phet.colorado.edu/sims/html/faradays-law/latest/faradays-law-600.png", url: "https://phet.colorado.edu/en/simulations/faradays-law" },
+            { name: "Fluid Pressure and Flow", imageUrl: "https://phet.colorado.edu/sims/html/fluid-pressure-and-flow/latest/fluid-pressure-and-flow-600.png", url: "https://phet.colorado.edu/en/simulations/fluid-pressure-and-flow" },
             { name: "Forces and Motion: Basics", imageUrl: "https://phet.colorado.edu/sims/html/forces-and-motion-basics/latest/forces-and-motion-basics-600.png", url: "https://phet.colorado.edu/en/simulations/forces-and-motion-basics" },
             { name: "Fourier: Making Waves", imageUrl: "https://phet.colorado.edu/sims/html/fourier-making-waves/latest/fourier-making-waves-600.png", url: "https://phet.colorado.edu/en/simulations/fourier-making-waves" },
             { name: "Friction", imageUrl: "https://phet.colorado.edu/sims/html/friction/latest/friction-600.png", url: "https://phet.colorado.edu/en/simulations/friction" },
+            { name: "Gas Properties", imageUrl: "https://phet.colorado.edu/sims/html/gas-properties/latest/gas-properties-600.png", url: "https://phet.colorado.edu/en/simulations/gas-properties" },
+            { name: "Geometric Optics", imageUrl: "https://phet.colorado.edu/sims/html/geometric-optics/latest/geometric-optics-600.png", url: "https://phet.colorado.edu/en/simulations/geometric-optics" },
             { name: "Gravity and Orbits", imageUrl: "https://phet.colorado.edu/sims/html/gravity-and-orbits/latest/gravity-and-orbits-600.png", url: "https://phet.colorado.edu/en/simulations/gravity-and-orbits" },
             { name: "Gravity Force Lab", imageUrl: "https://phet.colorado.edu/sims/html/gravity-force-lab/latest/gravity-force-lab-600.png", url: "https://phet.colorado.edu/en/simulations/gravity-force-lab" },
+            { name: "Greenhouse Effect", imageUrl: "https://phet.colorado.edu/sims/html/greenhouse-effect/latest/greenhouse-effect-600.png", url: "https://phet.colorado.edu/en/simulations/greenhouse-effect" },
             { name: "Hooke's Law", imageUrl: "https://phet.colorado.edu/sims/html/hookes-law/latest/hookes-law-600.png", url: "https://phet.colorado.edu/en/simulations/hookes-law" },
+            { name: "John Travoltage", imageUrl: "https://phet.colorado.edu/sims/html/john-travoltage/latest/john-travoltage-600.png", url: "https://phet.colorado.edu/en/simulations/john-travoltage" },
+            { name: "Ladybug Motion 2D", imageUrl: "https://phet.colorado.edu/sims/html/ladybug-motion-2d/latest/ladybug-motion-2d-600.png", url: "https://phet.colorado.edu/en/simulations/ladybug-motion-2d" },
+            { name: "Ladybug Revolution", imageUrl: "https://phet.colorado.edu/sims/html/rotation/latest/rotation-600.png", url: "https://phet.colorado.edu/en/simulations/rotation" },
+            { name: "Least-Squares Regression", imageUrl: "https://phet.colorado.edu/sims/html/least-squares-regression/latest/least-squares-regression-600.png", url: "https://phet.colorado.edu/en/simulations/least-squares-regression" },
             { name: "Masses and Springs", imageUrl: "https://phet.colorado.edu/sims/html/masses-and-springs/latest/masses-and-springs-600.png", url: "https://phet.colorado.edu/en/simulations/masses-and-springs" },
+            { name: "Masses and Springs: Basics", imageUrl: "https://phet.colorado.edu/sims/html/masses-and-springs-basics/latest/masses-and-springs-basics-600.png", url: "https://phet.colorado.edu/en/simulations/masses-and-springs-basics" },
+            { name: "Microwaves", imageUrl: "https://phet.colorado.edu/sims/html/microwaves/latest/microwaves-600.png", url: "https://phet.colorado.edu/en/simulations/microwaves" },
+            { name: "Models of the Hydrogen Atom", imageUrl: "https://phet.colorado.edu/sims/html/models-of-the-hydrogen-atom/latest/models-of-the-hydrogen-atom-600.png", url: "https://phet.colorado.edu/en/simulations/models-of-the-hydrogen-atom" },
+            { name: "Molecules and Light", imageUrl: "https://phet.colorado.edu/sims/html/molecules-and-light/latest/molecules-and-light-600.png", url: "https://phet.colorado.edu/en/simulations/molecules-and-light" },
+            { name: "Molecule Shapes", imageUrl: "https://phet.colorado.edu/sims/html/molecule-shapes/latest/molecule-shapes-600.png", url: "https://phet.colorado.edu/en/simulations/molecule-shapes" },
+            { name: "Molecule Shapes: Basics", imageUrl: "https://phet.colorado.edu/sims/html/molecule-shapes-basics/latest/molecule-shapes-basics-600.png", url: "https://phet.colorado.edu/en/simulations/molecule-shapes-basics" },
             { name: "My Solar System", imageUrl: "https://phet.colorado.edu/sims/html/my-solar-system/latest/my-solar-system-600.png", url: "https://phet.colorado.edu/en/simulations/my-solar-system" },
-            { name: "Normal Modes", imageUrl: "https://phet.colorado.edu/sims/html/normal-modes/latest/normal-modes-600.png", url: "https://phet.colorado.edu/en/simulations/normal-modes" },
+            { name: "Natural Selection", imageUrl: "https://phet.colorado.edu/sims/html/natural-selection/latest/natural-selection-600.png", url: "https://phet.colorado.edu/en/simulations/natural-selection" },
+            { name: "Nuclear Fission", imageUrl: "https://phet.colorado.edu/sims/html/nuclear-fission/latest/nuclear-fission-600.png", url: "https://phet.colorado.edu/en/simulations/nuclear-fission" },
+            { name: "Ohm's Law", imageUrl: "https://phet.colorado.edu/sims/html/ohms-law/latest/ohms-law-600.png", url: "https://phet.colorado.edu/en/simulations/ohms-law" },
             { name: "Pendulum Lab", imageUrl: "https://phet.colorado.edu/sims/html/pendulum-lab/latest/pendulum-lab-600.png", url: "https://phet.colorado.edu/en/simulations/pendulum-lab" },
+            { name: "Photoelectric Effect", imageUrl: "https://phet.colorado.edu/sims/html/photoelectric-effect/latest/photoelectric-effect-600.png", url: "https://phet.colorado.edu/en/simulations/photoelectric-effect" },
             { name: "Projectile Motion", imageUrl: "https://phet.colorado.edu/sims/html/projectile-motion/latest/projectile-motion-600.png", url: "https://phet.colorado.edu/en/simulations/projectile-motion" },
+            { name: "Quantum Bound States", imageUrl: "https://phet.colorado.edu/sims/html/bound-states/latest/bound-states-600.png", url: "https://phet.colorado.edu/en/simulations/bound-states" },
+            { name: "Quantum Tunneling and Wave Packets", imageUrl: "https://phet.colorado.edu/sims/html/quantum-tunneling/latest/quantum-tunneling-600.png", url: "https://phet.colorado.edu/en/simulations/quantum-tunneling" },
+            { name: "Quantum Wave Interference", imageUrl: "https://phet.colorado.edu/sims/html/quantum-wave-interference/latest/quantum-wave-interference-600.png", url: "https://phet.colorado.edu/en/simulations/quantum-wave-interference" },
+            { name: "Radioactive Dating Game", imageUrl: "https://phet.colorado.edu/sims/html/radioactive-dating-game/latest/radioactive-dating-game-600.png", url: "https://phet.colorado.edu/en/simulations/radioactive-dating-game" },
+            { name: "Radiating Charge", imageUrl: "https://phet.colorado.edu/sims/html/radiating-charge/latest/radiating-charge-600.png", url: "https://phet.colorado.edu/en/simulations/radiating-charge" },
+            { name: "Radio Waves & Electromagnetic Fields", imageUrl: "https://phet.colorado.edu/sims/html/radio-waves/latest/radio-waves-600.png", url: "https://phet.colorado.edu/en/simulations/radio-waves" },
+            { name: "Ramp: Forces and Motion", imageUrl: "https://phet.colorado.edu/sims/html/ramp-forces-and-motion/latest/ramp-forces-and-motion-600.png", url: "https://phet.colorado.edu/en/simulations/ramp-forces-and-motion" },
             { name: "Resistance in a Wire", imageUrl: "https://phet.colorado.edu/sims/html/resistance-in-a-wire/latest/resistance-in-a-wire-600.png", url: "https://phet.colorado.edu/en/simulations/resistance-in-a-wire" },
             { name: "Resonance", imageUrl: "https://phet.colorado.edu/sims/html/resonance/latest/resonance-600.png", url: "https://phet.colorado.edu/en/simulations/resonance" },
             { name: "Reversible Reactions", imageUrl: "https://phet.colorado.edu/sims/html/reversible-reactions/latest/reversible-reactions-600.png", url: "https://phet.colorado.edu/en/simulations/reversible-reactions" },
             { name: "Rutherford Scattering", imageUrl: "https://phet.colorado.edu/sims/html/rutherford-scattering/latest/rutherford-scattering-600.png", url: "https://phet.colorado.edu/en/simulations/rutherford-scattering" },
+            { name: "Semiconductors", imageUrl: "https://phet.colorado.edu/sims/html/semiconductors/latest/semiconductors-600.png", url: "https://phet.colorado.edu/en/simulations/semiconductors" },
+            { name: "Sound", imageUrl: "https://phet.colorado.edu/sims/html/sound/latest/sound-600.png", url: "https://phet.colorado.edu/en/simulations/sound" },
+            { name: "States of Matter", imageUrl: "https://phet.colorado.edu/sims/html/states-of-matter/latest/states-of-matter-600.png", url: "https://phet.colorado.edu/en/simulations/states-of-matter" },
+            { name: "States of Matter: Basics", imageUrl: "https://phet.colorado.edu/sims/html/states-of-matter-basics/latest/states-of-matter-basics-600.png", url: "https://phet.colorado.edu/en/simulations/states-of-matter-basics" },
+            { name: "Stern-Gerlach Experiment", imageUrl: "https://phet.colorado.edu/sims/html/stern-gerlach/latest/stern-gerlach-600.png", url: "https://phet.colorado.edu/en/simulations/stern-gerlach" },
             { name: "The Moving Man", imageUrl: "https://phet.colorado.edu/sims/html/moving-man/latest/moving-man-600.png", url: "https://phet.colorado.edu/en/simulations/moving-man" },
             { name: "Torque", imageUrl: "https://phet.colorado.edu/sims/html/torque/latest/torque-600.png", url: "https://phet.colorado.edu/en/simulations/torque" },
+            { name: "Trig Tour", imageUrl: "https://phet.colorado.edu/sims/html/trig-tour/latest/trig-tour-600.png", url: "https://phet.colorado.edu/en/simulations/trig-tour" },
             { name: "Under Pressure", imageUrl: "https://phet.colorado.edu/sims/html/under-pressure/latest/under-pressure-600.png", url: "https://phet.colorado.edu/en/simulations/under-pressure" },
             { name: "Vector Addition", imageUrl: "https://phet.colorado.edu/sims/html/vector-addition/latest/vector-addition-600.png", url: "https://phet.colorado.edu/en/simulations/vector-addition" },
             { name: "Wave on a String", imageUrl: "https://phet.colorado.edu/sims/html/wave-on-a-string/latest/wave-on-a-string-600.png", url: "https://phet.colorado.edu/en/simulations/wave-on-a-string" },
             { name: "Wave Interference", imageUrl: "https://phet.colorado.edu/sims/html/wave-interference/latest/wave-interference-600.png", url: "https://phet.colorado.edu/en/simulations/wave-interference" },
+            { name: "Waves Intro", imageUrl: "https://phet.colorado.edu/sims/html/waves-intro/latest/waves-intro-600.png", url: "https://phet.colorado.edu/en/simulations/waves-intro" },
         ];
 
         for (let i = 0; i < simulations.length; i++) {
