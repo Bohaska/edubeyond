@@ -21,6 +21,7 @@ import type * as http from "../http.js";
 import type * as questions from "../questions.js";
 import type * as resources from "../resources.js";
 import type * as tutor from "../tutor.js";
+import type * as tutorStore from "../tutorStore.js";
 import type * as users from "../users.js";
 
 /**
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   questions: typeof questions;
   resources: typeof resources;
   tutor: typeof tutor;
+  tutorStore: typeof tutorStore;
   users: typeof users;
 }>;
 export declare const api: FilterApi<
