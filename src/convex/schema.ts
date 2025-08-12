@@ -62,6 +62,18 @@ const schema = defineSchema({
     addedBy: v.id("users"), // User who cataloged this resource
   }).index("by_user", ["addedBy"]),
 
+  resources: defineTable({
+    parentId: v.optional(v.id("resources")),
+    name: v.string(),
+    type: v.union(v.literal("category"), v.literal("guidesheet"), v.literal("video"), v.literal("link")),
+    url: v.optional(v.string()),
+    order: v.number(),
+  })
+  .index("by_parent_and_order", ["parentId", "order"])
+  .searchIndex("by_name", {
+    searchField: "name",
+  }),
+
   conversations: defineTable({
     userId: v.id("users"),
     title: v.string(),

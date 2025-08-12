@@ -95,14 +95,14 @@ export default function Dashboard() {
               <Card className="h-full">
                 <CardHeader>
                   <Database className="h-8 w-8 text-purple-600 mb-2" />
-                  <CardTitle>Dataset Catalog</CardTitle>
+                  <CardTitle>Resource Library</CardTitle>
                   <CardDescription>
-                    Explore curated physics resources and question databases
+                    Explore curated physics resources, guides, and videos.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button asChild variant="outline" className="w-full">
-                    <Link to="/question-generator?tab=datasets">Explore Datasets</Link>
+                    <Link to="/resources">Explore Resources</Link>
                   </Button>
                 </CardContent>
               </Card>
