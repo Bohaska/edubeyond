@@ -23,14 +23,20 @@ export const getConversations = query({
 });
 
 export const getMessages = query({
-    args: {
-        conversationId: v.id("conversations"),
-    },
+    args: { conversationId: v.id("conversations") },
     handler: async (ctx, args) => {
-        return await ctx.db
+        const user = await getCurrentUser(ctx);
+        if (!user) return [];
+
+        const messages = await ctx.db
             .query("messages")
             .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
             .collect();
+
+        return messages.map(msg => ({
+            ...msg,
+            isViewer: msg.role === "user"
+        }));
     },
 });
 
@@ -65,14 +71,14 @@ export const sendMessage = action({
             conversationId: args.conversationId,
             userId: user._id,
             text: args.message,
-            isViewer: true,
+            role: "user" as const,
         });
 
         const botMessageId = await ctx.runMutation(internal.tutor.addMessage, {
             conversationId: args.conversationId,
             userId: user._id,
             text: "",
-            isViewer: false,
+            role: "model" as const,
         });
 
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -133,15 +139,25 @@ export const addMessage = internalMutation({
     args: {
         conversationId: v.id("conversations"),
         userId: v.id("users"),
-        text: v.string(),
-        isViewer: v.boolean(),
+        role: v.union(v.literal("user"), v.literal("model"), v.literal("function")),
+        text: v.optional(v.string()),
+        functionCall: v.optional(v.object({
+            name: v.string(),
+            args: v.string(),
+        })),
+        functionResponse: v.optional(v.object({
+            name: v.string(),
+            response: v.string(),
+        })),
     },
     handler: async (ctx, args) => {
         return await ctx.db.insert("messages", {
             conversationId: args.conversationId,
             userId: args.userId,
+            role: args.role,
             text: args.text,
-            isViewer: args.isViewer,
+            functionCall: args.functionCall,
+            functionResponse: args.functionResponse,
         });
     },
 });
@@ -158,3 +174,23 @@ export const createConversationInternal = internalMutation({
         });
     },
 });
+
+const searchResourcesTool = {
+    name: 'search_resources',
+    description: 'Search for relevant AP Physics C resources including videos, simulations, guidesheets, and links.',
+    parameters: {
+        type: "OBJECT",
+        properties: {
+            query: {
+                type: "STRING",
+                description: 'Search query for finding resources (e.g., "capacitors", "kinematics", "electric field")',
+            },
+            type: {
+                type: "STRING",
+                enum: ["video", "simulation", "guidesheet", "link"],
+                description: 'Optional: Filter by resource type',
+            },
+        },
+        required: ['query'],
+    },
+};

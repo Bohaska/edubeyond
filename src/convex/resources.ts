@@ -18,7 +18,7 @@ export const getResources = query({
         if (args.search) {
             return await ctx.db
                 .query("resources")
-                .withSearchIndex("by_name", (q) => q.search("name", args.search!))
+                .withSearchIndex("search_name", (q) => q.search("name", args.search!))
                 .collect();
         }
 
@@ -26,6 +26,25 @@ export const getResources = query({
             .query("resources")
             .withIndex("by_parent_and_order", (q) => q.eq("parentId", args.parentId))
             .collect();
+    },
+});
+
+export const searchResources = query({
+    args: { 
+        query: v.string(),
+        type: v.optional(v.union(v.literal("category"), v.literal("guidesheet"), v.literal("video"), v.literal("link"), v.literal("simulation")))
+    },
+    handler: async (ctx, args) => {
+        let results = await ctx.db
+            .query("resources")
+            .withSearchIndex("search_name", (q) => q.search("name", args.query))
+            .take(10);
+
+        if (args.type) {
+            results = results.filter(resource => resource.type === args.type);
+        }
+
+        return results;
     },
 });
 

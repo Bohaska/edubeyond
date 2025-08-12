@@ -58,7 +58,7 @@ export function TutorChat() {
                             <div key={index} className={`flex items-start gap-4 mb-4 ${msg.isViewer ? "justify-end" : ""}`}>
                                 {msg.isViewer ? <User className="h-8 w-8" /> : <Bot className="h-8 w-8" />}
                                 <div className={`p-3 rounded-lg ${msg.isViewer ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                                    <MarkdownRenderer content={msg.text} />
+                                    <MarkdownRenderer content={msg.text || ""} />
                                 </div>
                             </div>
                         ))}

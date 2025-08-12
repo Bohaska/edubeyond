@@ -63,17 +63,17 @@ const schema = defineSchema({
   }).index("by_user", ["addedBy"]),
 
   resources: defineTable({
-    parentId: v.optional(v.id("resources")),
     name: v.string(),
     type: v.union(v.literal("category"), v.literal("guidesheet"), v.literal("video"), v.literal("link"), v.literal("simulation")),
     url: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
-    order: v.number(),
+    parentId: v.optional(v.id("resources")),
+    order: v.optional(v.number()),
   })
-  .index("by_parent_and_order", ["parentId", "order"])
-  .searchIndex("by_name", {
-    searchField: "name",
-  }),
+    .index("by_parent_and_order", ["parentId", "order"])
+    .searchIndex("search_name", {
+      searchField: "name",
+    }),
 
   conversations: defineTable({
     userId: v.id("users"),
@@ -83,8 +83,18 @@ const schema = defineSchema({
   messages: defineTable({
     conversationId: v.id("conversations"),
     userId: v.id("users"),
-    text: v.string(),
-    isViewer: v.boolean(),
+    role: v.union(v.literal("user"), v.literal("model"), v.literal("function")),
+    text: v.optional(v.string()),
+    // For model's request to call a tool
+    functionCall: v.optional(v.object({
+        name: v.string(),
+        args: v.string(), // JSON stringified args
+    })),
+    // For the result of a tool call
+    functionResponse: v.optional(v.object({
+        name: v.string(), // name of the function that was called
+        response: v.string(), // JSON stringified result
+    })),
   }).index("by_conversation", ["conversationId"]),
 
 },
