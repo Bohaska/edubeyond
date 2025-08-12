@@ -53,27 +53,26 @@ export const createConversation = mutation({
 export const sendMessage = action({
     args: {
         message: v.string(),
-        conversationId: v.optional(v.id("conversations")),
+        conversationId: v.id("conversations"),
     },
-    handler: async (ctx, args): Promise<Id<"conversations">> => {
+    handler: async (ctx, args) => {
         const user = await ctx.runQuery(api.users.currentUser);
         if (!user) {
             throw new Error("User not authenticated");
         }
 
-        let conversationId = args.conversationId;
-        if (!conversationId) {
-            conversationId = await ctx.runMutation(internal.tutor.createConversationInternal, {
-                title: args.message.substring(0, 50),
-                userId: user._id,
-            });
-        }
-
         await ctx.runMutation(internal.tutor.addMessage, {
-            conversationId: conversationId!,
+            conversationId: args.conversationId,
             userId: user._id,
             text: args.message,
             isViewer: true,
+        });
+
+        const botMessageId = await ctx.runMutation(internal.tutor.addMessage, {
+            conversationId: args.conversationId,
+            userId: user._id,
+            text: "",
+            isViewer: false,
         });
 
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -102,18 +101,31 @@ export const sendMessage = action({
             },
         });
 
-        const result = await chat.sendMessage(args.message);
-        const response = await result.response;
-        const text = response.text();
+        const stream = await chat.sendMessageStream(args.message);
 
-        await ctx.runMutation(internal.tutor.addMessage, {
-            conversationId,
-            userId: user._id,
-            text,
-            isViewer: false,
-        });
+        for await (const chunk of stream.stream) {
+            const chunkText = chunk.text();
+            if (chunkText) {
+                await ctx.runMutation(internal.tutor.appendBotMessageChunk, {
+                    messageId: botMessageId,
+                    text: chunkText,
+                });
+            }
+        }
+    },
+});
 
-        return conversationId;
+export const appendBotMessageChunk = internalMutation({
+    args: {
+        messageId: v.id("messages"),
+        text: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const message = await ctx.db.get(args.messageId);
+        if (!message) {
+            throw new Error("Message not found");
+        }
+        await ctx.db.patch(args.messageId, { text: message.text + args.text });
     },
 });
 
@@ -125,7 +137,7 @@ export const addMessage = internalMutation({
         isViewer: v.boolean(),
     },
     handler: async (ctx, args) => {
-        await ctx.db.insert("messages", {
+        return await ctx.db.insert("messages", {
             conversationId: args.conversationId,
             userId: args.userId,
             text: args.text,

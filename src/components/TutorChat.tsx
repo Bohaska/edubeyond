@@ -27,7 +27,7 @@ export function TutorChat() {
             currentConversationId = newConversationId;
         }
 
-        await sendMessage({ message, conversationId: currentConversationId });
+        sendMessage({ message, conversationId: currentConversationId });
         setMessage("");
     };
 
