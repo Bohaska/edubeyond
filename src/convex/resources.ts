@@ -353,3 +353,62 @@ export const seedMoreResources = mutation({
         return "More resources seeded successfully!";
     }
 });
+
+export const seedPhetSimulations = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const phetCategoryId = await ctx.db.insert("resources", {
+            name: "Phet Physics Simulations",
+            type: "category",
+            parentId: undefined,
+            order: 3,
+        });
+
+        const simulations = [
+            { name: "2D Motion", imageUrl: "https://phet.colorado.edu/sims/html/motion-2d/latest/motion-2d-600.png", url: "https://phet.colorado.edu/en/simulations/motion-2d" },
+            { name: "Balancing Act", imageUrl: "https://phet.colorado.edu/sims/html/balancing-act/latest/balancing-act-600.png", url: "https://phet.colorado.edu/en/simulations/balancing-act" },
+            { name: "Calculus Grapher", imageUrl: "https://phet.colorado.edu/sims/html/calculus-grapher/latest/calculus-grapher-600.png", url: "https://phet.colorado.edu/en/simulations/calculus-grapher" },
+            { name: "Charges and Fields", imageUrl: "https://phet.colorado.edu/sims/html/charges-and-fields/latest/charges-and-fields-600.png", url: "https://phet.colorado.edu/en/simulations/charges-and-fields" },
+            { name: "Circuit Construction Kit: DC", imageUrl: "https://phet.colorado.edu/sims/html/circuit-construction-kit-dc/latest/circuit-construction-kit-dc-600.png", url: "https://phet.colorado.edu/en/simulations/circuit-construction-kit-dc" },
+            { name: "Circuit Construction Kit: AC", imageUrl: "https://phet.colorado.edu/sims/html/circuit-construction-kit-ac/latest/circuit-construction-kit-ac-600.png", url: "https://phet.colorado.edu/en/simulations/circuit-construction-kit-ac" },
+            { name: "Collision Lab", imageUrl: "https://phet.colorado.edu/sims/html/collision-lab/latest/collision-lab-600.png", url: "https://phet.colorado.edu/en/simulations/collision-lab" },
+            { name: "Color Vision", imageUrl: "https://phet.colorado.edu/sims/html/color-vision/latest/color-vision-600.png", url: "https://phet.colorado.edu/en/simulations/color-vision" },
+            { name: "Energy Skate Park", imageUrl: "https://phet.colorado.edu/sims/html/energy-skate-park/latest/energy-skate-park-600.png", url: "https://phet.colorado.edu/en/simulations/energy-skate-park" },
+            { name: "Faraday's Law", imageUrl: "https://phet.colorado.edu/sims/html/faradays-law/latest/faradays-law-600.png", url: "https://phet.colorado.edu/en/simulations/faradays-law" },
+            { name: "Forces and Motion: Basics", imageUrl: "https://phet.colorado.edu/sims/html/forces-and-motion-basics/latest/forces-and-motion-basics-600.png", url: "https://phet.colorado.edu/en/simulations/forces-and-motion-basics" },
+            { name: "Fourier: Making Waves", imageUrl: "https://phet.colorado.edu/sims/html/fourier-making-waves/latest/fourier-making-waves-600.png", url: "https://phet.colorado.edu/en/simulations/fourier-making-waves" },
+            { name: "Friction", imageUrl: "https://phet.colorado.edu/sims/html/friction/latest/friction-600.png", url: "https://phet.colorado.edu/en/simulations/friction" },
+            { name: "Gravity and Orbits", imageUrl: "https://phet.colorado.edu/sims/html/gravity-and-orbits/latest/gravity-and-orbits-600.png", url: "https://phet.colorado.edu/en/simulations/gravity-and-orbits" },
+            { name: "Gravity Force Lab", imageUrl: "https://phet.colorado.edu/sims/html/gravity-force-lab/latest/gravity-force-lab-600.png", url: "https://phet.colorado.edu/en/simulations/gravity-force-lab" },
+            { name: "Hooke's Law", imageUrl: "https://phet.colorado.edu/sims/html/hookes-law/latest/hookes-law-600.png", url: "https://phet.colorado.edu/en/simulations/hookes-law" },
+            { name: "Masses and Springs", imageUrl: "https://phet.colorado.edu/sims/html/masses-and-springs/latest/masses-and-springs-600.png", url: "https://phet.colorado.edu/en/simulations/masses-and-springs" },
+            { name: "My Solar System", imageUrl: "https://phet.colorado.edu/sims/html/my-solar-system/latest/my-solar-system-600.png", url: "https://phet.colorado.edu/en/simulations/my-solar-system" },
+            { name: "Normal Modes", imageUrl: "https://phet.colorado.edu/sims/html/normal-modes/latest/normal-modes-600.png", url: "https://phet.colorado.edu/en/simulations/normal-modes" },
+            { name: "Pendulum Lab", imageUrl: "https://phet.colorado.edu/sims/html/pendulum-lab/latest/pendulum-lab-600.png", url: "https://phet.colorado.edu/en/simulations/pendulum-lab" },
+            { name: "Projectile Motion", imageUrl: "https://phet.colorado.edu/sims/html/projectile-motion/latest/projectile-motion-600.png", url: "https://phet.colorado.edu/en/simulations/projectile-motion" },
+            { name: "Resistance in a Wire", imageUrl: "https://phet.colorado.edu/sims/html/resistance-in-a-wire/latest/resistance-in-a-wire-600.png", url: "https://phet.colorado.edu/en/simulations/resistance-in-a-wire" },
+            { name: "Resonance", imageUrl: "https://phet.colorado.edu/sims/html/resonance/latest/resonance-600.png", url: "https://phet.colorado.edu/en/simulations/resonance" },
+            { name: "Reversible Reactions", imageUrl: "https://phet.colorado.edu/sims/html/reversible-reactions/latest/reversible-reactions-600.png", url: "https://phet.colorado.edu/en/simulations/reversible-reactions" },
+            { name: "Rutherford Scattering", imageUrl: "https://phet.colorado.edu/sims/html/rutherford-scattering/latest/rutherford-scattering-600.png", url: "https://phet.colorado.edu/en/simulations/rutherford-scattering" },
+            { name: "The Moving Man", imageUrl: "https://phet.colorado.edu/sims/html/moving-man/latest/moving-man-600.png", url: "https://phet.colorado.edu/en/simulations/moving-man" },
+            { name: "Torque", imageUrl: "https://phet.colorado.edu/sims/html/torque/latest/torque-600.png", url: "https://phet.colorado.edu/en/simulations/torque" },
+            { name: "Under Pressure", imageUrl: "https://phet.colorado.edu/sims/html/under-pressure/latest/under-pressure-600.png", url: "https://phet.colorado.edu/en/simulations/under-pressure" },
+            { name: "Vector Addition", imageUrl: "https://phet.colorado.edu/sims/html/vector-addition/latest/vector-addition-600.png", url: "https://phet.colorado.edu/en/simulations/vector-addition" },
+            { name: "Wave on a String", imageUrl: "https://phet.colorado.edu/sims/html/wave-on-a-string/latest/wave-on-a-string-600.png", url: "https://phet.colorado.edu/en/simulations/wave-on-a-string" },
+            { name: "Wave Interference", imageUrl: "https://phet.colorado.edu/sims/html/wave-interference/latest/wave-interference-600.png", url: "https://phet.colorado.edu/en/simulations/wave-interference" },
+        ];
+
+        for (let i = 0; i < simulations.length; i++) {
+            await ctx.db.insert("resources", {
+                name: simulations[i].name,
+                type: "simulation",
+                url: simulations[i].url,
+                imageUrl: simulations[i].imageUrl,
+                parentId: phetCategoryId,
+                order: i + 1,
+            });
+        }
+
+        return "Phet simulations seeded successfully!";
+    }
+});

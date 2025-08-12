@@ -16,18 +16,40 @@ const ResourceNode = ({ resourceId }: { resourceId: Id<"resources"> }) => {
     }
 
     if (resource.type === "category") {
+        const hasSimulations = children?.some(c => c.type === 'simulation');
         return (
             <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value={resource.name}>
                     <AccordionTrigger>{resource.name}</AccordionTrigger>
                     <AccordionContent className="pl-4">
-                        {children?.map((child) => (
-                            <ResourceNode key={child._id} resourceId={child._id} />
-                        ))}
+                        {hasSimulations ? (
+                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-4">
+                                {children?.map((child) => (
+                                    <ResourceNode key={child._id} resourceId={child._id} />
+                                ))}
+                            </div>
+                        ) : (
+                            children?.map((child) => (
+                                <ResourceNode key={child._id} resourceId={child._id} />
+                            ))
+                        )}
                     </AccordionContent>
                 </AccordionItem>
             </Accordion>
         );
+    }
+
+    if (resource.type === "simulation") {
+        return (
+            <a href={resource.url} target="_blank" rel="noopener noreferrer" className="group block border rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200">
+                <div className="overflow-hidden h-40">
+                    <img src={resource.imageUrl!} alt={resource.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+                </div>
+                <div className="p-3">
+                    <h3 className="font-semibold text-sm truncate">{resource.name}</h3>
+                </div>
+            </a>
+        )
     }
 
     const Icon = resource.type === 'guidesheet' ? FileText : resource.type === 'video' ? Video : LinkIcon;

@@ -65,8 +65,9 @@ const schema = defineSchema({
   resources: defineTable({
     parentId: v.optional(v.id("resources")),
     name: v.string(),
-    type: v.union(v.literal("category"), v.literal("guidesheet"), v.literal("video"), v.literal("link")),
+    type: v.union(v.literal("category"), v.literal("guidesheet"), v.literal("video"), v.literal("link"), v.literal("simulation")),
     url: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
     order: v.number(),
   })
   .index("by_parent_and_order", ["parentId", "order"])
