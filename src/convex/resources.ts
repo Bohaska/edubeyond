@@ -135,7 +135,7 @@ export const seedMoreResources = mutation({
     args: {},
     handler: async (ctx) => {
         const mainCategoryId = await ctx.db.insert("resources", {
-            name: "Comprehensive AP Physics C Resources",
+            name: "Flipping Physics",
             type: "category",
             parentId: undefined,
             order: 2,
