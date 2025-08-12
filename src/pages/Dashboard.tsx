@@ -5,7 +5,7 @@ import { Protected } from "@/lib/protected-page";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Brain, Database } from "lucide-react";
+import { BookOpen, Brain, Database, MessageSquare } from "lucide-react";
 import { Link } from "react-router";
 
 export default function Dashboard() {
@@ -25,7 +25,7 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <motion.div
               whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.2 }}
@@ -46,6 +46,28 @@ export default function Dashboard() {
               </Card>
             </motion.div>
 
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card className="h-full">
+                <CardHeader>
+                  <MessageSquare className="h-8 w-8 text-yellow-600 mb-2" />
+                  <CardTitle>AI Tutor</CardTitle>
+                  <CardDescription>
+                    Chat with an AI tutor to get help with AP Physics C concepts
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full">
+                    <Link to="/tutor">Start Tutoring</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <motion.div
               whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.2 }}

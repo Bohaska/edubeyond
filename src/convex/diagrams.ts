@@ -18,12 +18,24 @@ export const generateDiagram = action({
 
     const prompt = `
       Based on the following AP Physics C question, generate a clean, simple, and clear SVG diagram that illustrates the problem.
-      The style should be similar to diagrams found in College Board AP Physics materials - use clear lines, simple shapes, and labels where necessary.
-      Do not include any text outside of the SVG tags. The output should be only the SVG code.
 
-      Question: "${args.questionText}"
+      **Instructions for the AI Model:**
+      1.  **Think Step-by-Step First:** Before generating the SVG, analyze the question to identify all necessary components for the diagram.
+      2.  **List Objects and Coordinates:** Create a logical plan. List the objects (e.g., blocks, planes, vectors), their coordinates (x, y), rotations, and required labels. Think logically about coordinate placement to ensure precise alignment.
+      3.  **SVG Styling Rules:**
+          -   Use font-family="Helvetica" and font-size="16" for all text labels.
+          -   Keep all strokes uniform with a stroke-width of 1.5.
+          -   Position all labels at least 10 pixels away from SVG edges or other objects for clarity.
+      4.  **Output Format:** The final output must be ONLY the SVG code, starting with <svg> and ending with </svg>. Do not include your step-by-step thinking process, just the final SVG. The style should be similar to diagrams found in College Board AP Physics materials.
 
-      SVG Diagram:
+      **Question:** "${args.questionText}"
+
+      **Internal Thinking Process (for you to plan, not for final output):**
+      - Object 1: [description, coordinates, rotation, label]
+      - Object 2: [description, coordinates, rotation, label]
+      - ...
+
+      **Final Output (SVG code only):**
     `;
 
     try {
