@@ -1,10 +1,17 @@
-"use a node";
-import { v } from "convex/values";
-import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+"use node";
+import { ConvexError, v } from "convex/values";
 import { api, internal } from "./_generated/api";
+import { Doc, Id } from "./_generated/dataModel";
+import {
+  action,
+  internalAction,
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { getCurrentUser } from "./users";
-import { Id } from "./_generated/dataModel";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -40,6 +47,16 @@ export const getMessages = query({
     },
 });
 
+export const getMessagesInternal = internalQuery({
+    args: { conversationId: v.id("conversations") },
+    handler: async (ctx, args) => {
+        return await ctx.db
+            .query("messages")
+            .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
+            .collect();
+    },
+});
+
 export const createConversation = mutation({
     args: {
         title: v.string(),
@@ -58,68 +75,84 @@ export const createConversation = mutation({
 
 export const sendMessage = action({
     args: {
-        message: v.string(),
         conversationId: v.id("conversations"),
+        message: v.string(),
     },
     handler: async (ctx, args) => {
+        const { conversationId, message } = args;
         const user = await ctx.runQuery(api.users.currentUser);
+
         if (!user) {
-            throw new Error("User not authenticated");
+            throw new ConvexError("User not authenticated");
         }
 
         await ctx.runMutation(internal.tutor.addMessage, {
-            conversationId: args.conversationId,
+            conversationId,
             userId: user._id,
-            text: args.message,
-            role: "user" as const,
+            role: "user",
+            text: message,
         });
 
-        const botMessageId = await ctx.runMutation(internal.tutor.addMessage, {
-            conversationId: args.conversationId,
-            userId: user._id,
-            text: "",
-            role: "model" as const,
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.5-flash",
+            tools: [{ functionDeclarations: [searchResourcesTool] }],
         });
 
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash", 
-            tools: [{ functionDeclarations: [searchResourcesTool] }]
+        const messages = await ctx.runQuery(internal.tutor.getMessagesInternal, {
+            conversationId,
         });
+
         const chat = model.startChat({
-            history: [
-                {
-                    role: "user",
-                    parts: [{
-                        text: `You are an expert AI tutor for AP Physics C, specializing in both Mechanics and Electricity & Magnetism. Your goal is to help high school students master the challenging concepts of AP Physics C.
-
-**Your Tutoring Style:**
-- **Socratic Method:** Instead of giving direct answers, guide students to the solution by asking probing questions. Help them break down complex problems into smaller, manageable steps.
-- **Conceptual Clarity:** Emphasize a deep understanding of fundamental principles over rote memorization of formulas.
-- **Problem-Solving Focus:** When a student presents a problem, walk them through the setup, identifying knowns and unknowns, choosing the right equations, and executing the solution.
-- **Encouraging & Patient:** Maintain a positive and supportive tone. If a student is wrong, gently correct them and explain the underlying concept.
-- **Use LaTeX:** For all mathematical equations, variables, and expressions, use LaTeX to ensure they are rendered correctly. For example, use \`$F = ma$\` for Force equals mass times acceleration.`
-                    }]
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "Understood. I am ready to begin tutoring." }]
-                }
-            ],
-            generationConfig: {
-                maxOutputTokens: 2000,
-            },
+            history: messages.slice(0, -1).map((msg: any) => ({
+                role: msg.role === "model" ? "model" : "user",
+                parts: [{ text: msg.text || "" }],
+            })),
         });
 
-        const stream = await chat.sendMessageStream(args.message);
+        const result = await chat.sendMessage(message);
+        const response = result.response;
 
-        for await (const chunk of stream.stream) {
-            const chunkText = chunk.text();
-            if (chunkText) {
-                await ctx.runMutation(internal.tutor.appendBotMessageChunk, {
-                    messageId: botMessageId,
-                    text: chunkText,
+        const functionCalls = response.functionCalls();
+
+        if (functionCalls && functionCalls.length > 0) {
+            const call = functionCalls[0];
+            if (call.name === "search_resources") {
+                const args = call.args as any;
+                const { query, resourceType } = args || {};
+                const searchResults = await ctx.runQuery(api.resources.searchResources, {
+                    query: query as string,
+                    type: resourceType as "link" | "category" | "guidesheet" | "video" | "simulation" | undefined,
+                });
+
+                const toolResponse = {
+                    functionResponse: {
+                        name: "search_resources",
+                        response: {
+                            name: "search_resources",
+                            content: JSON.stringify(searchResults),
+                        },
+                    },
+                };
+
+                const resultWithTool = await chat.sendMessage(
+                    JSON.stringify(toolResponse)
+                );
+                const responseWithTool = resultWithTool.response;
+
+                await ctx.runMutation(internal.tutor.addMessage, {
+                    conversationId,
+                    userId: user._id,
+                    role: "model",
+                    text: responseWithTool.text(),
                 });
             }
+        } else {
+            await ctx.runMutation(internal.tutor.addMessage, {
+                conversationId,
+                userId: user._id,
+                role: "model",
+                text: response.text(),
+            });
         }
     },
 });
@@ -182,18 +215,17 @@ const searchResourcesTool = {
     name: 'search_resources',
     description: 'Search for relevant AP Physics C resources including videos, simulations, guidesheets, and links.',
     parameters: {
-        type: 'object' as const,
+        type: SchemaType.OBJECT,
         properties: {
             query: {
-                type: 'string' as const,
+                type: SchemaType.STRING,
                 description: 'Search query for finding resources (e.g., "capacitors", "kinematics", "electric field")',
-            },
-            type: {
-                type: 'string' as const,
-                enum: ["video", "simulation", "guidesheet", "link"],
+            } as any,
+            resourceType: {
+                type: SchemaType.STRING,
                 description: 'Optional: Filter by resource type',
-            },
+            } as any,
         },
         required: ['query'],
     },
-} as const;
+} as any;
