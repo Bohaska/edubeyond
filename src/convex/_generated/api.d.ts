@@ -20,6 +20,7 @@ import type * as diagrams from "../diagrams.js";
 import type * as http from "../http.js";
 import type * as questions from "../questions.js";
 import type * as resources from "../resources.js";
+import type * as seed from "../seed.js";
 import type * as tutor from "../tutor.js";
 import type * as tutorStore from "../tutorStore.js";
 import type * as users from "../users.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   questions: typeof questions;
   resources: typeof resources;
+  seed: typeof seed;
   tutor: typeof tutor;
   tutorStore: typeof tutorStore;
   users: typeof users;
