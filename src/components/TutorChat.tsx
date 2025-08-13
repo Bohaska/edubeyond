@@ -2,6 +2,10 @@ import { useState } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 export default function TutorChat() {
     const [message, setMessage] = useState("");
@@ -54,9 +58,20 @@ export default function TutorChat() {
             <div className="flex-1 flex flex-col">
                 <div className="flex-1 p-4 overflow-y-auto">
                     {messages?.map((msg: any, index: number) => (
-                        <div key={index} className={`mb-4 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                            <div className={`inline-block p-3 rounded-lg ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
-                                {msg.text}
+                        <div key={index} className={`mb-4 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-2xl inline-block p-3 rounded-lg ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                                {msg.role === "model" ? (
+                                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                                    <ReactMarkdown
+                                      remarkPlugins={[remarkMath]}
+                                      rehypePlugins={[rehypeKatex]}
+                                    >
+                                      {msg.text}
+                                    </ReactMarkdown>
+                                  </div>
+                                ) : (
+                                  msg.text
+                                )}
                             </div>
                         </div>
                     ))}
