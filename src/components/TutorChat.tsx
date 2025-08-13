@@ -61,7 +61,7 @@ export default function TutorChat() {
                         <div key={index} className={`mb-4 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-2xl inline-block p-3 rounded-lg ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
                                 {msg.role === "model" ? (
-                                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                                  <div className="prose prose-sm dark:prose-invert max-w-none prose-a:text-blue-600 prose-a:underline dark:prose-a:text-blue-400">
                                     <ReactMarkdown
                                       remarkPlugins={[remarkMath]}
                                       rehypePlugins={[rehypeKatex]}
