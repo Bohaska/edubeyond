@@ -1,9 +1,9 @@
 import { v } from "convex/values";
 import { action, mutation, query } from "./_generated/server";
 import { getCurrentUser } from "./users";
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenAI, Type } from "@google/genai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY!);
 
 // Generate a question using AI (this will be an action since it calls external APIs)
 export const generateQuestion = action({

@@ -1,11 +1,11 @@
 import { v } from "convex/values";
 import { action, internalMutation, mutation } from "./_generated/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { getCurrentUser } from "./users";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY!);
 
 export const generateDiagram = action({
   args: {

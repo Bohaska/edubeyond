@@ -4,7 +4,7 @@ import { api, internal } from "./_generated/api";
 import {
   action,
 } from "./_generated/server";
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/genai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -96,14 +96,14 @@ const searchResourcesTool = {
     name: 'search_resources',
     description: 'Search for relevant AP Physics C resources including videos, simulations, guidesheets, and links.',
     parameters: {
-        type: SchemaType.OBJECT,
+        type: Type.OBJECT,
         properties: {
             query: {
-                type: SchemaType.STRING,
+                type: Type.STRING,
                 description: 'Search query for finding resources (e.g., "capacitors", "kinematics", "electric field")',
             } as any,
             resourceType: {
-                type: SchemaType.STRING,
+                type: Type.STRING,
                 description: 'Optional: Filter by resource type',
             } as any,
         },
