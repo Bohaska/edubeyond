@@ -1,9 +1,9 @@
 import { v } from "convex/values";
 import { action, mutation, query } from "./_generated/server";
 import { getCurrentUser } from "./users";
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
-const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY!);
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 // Generate a question using AI (this will be an action since it calls external APIs)
 export const generateQuestion = action({
@@ -12,19 +12,10 @@ export const generateQuestion = action({
     questionType: v.string(),
     difficulty: v.string(),
   },
-  returns: v.object({
-    questionText: v.string(),
-    answer: v.string(),
-    explanation: v.string(),
-    choices: v.optional(v.array(v.string())),
-    correctChoice: v.optional(v.string()),
-  }),
   handler: async (ctx, args) => {
     const { topic, questionType, difficulty } = args;
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     let prompt: string;
-    let schema;
 
     if (questionType === "MCQ") {
       prompt = `Generate a ${difficulty} multiple-choice question for AP Physics C about ${topic}.
@@ -41,28 +32,15 @@ Example LaTeX formatting:
 - Force: $F = ma$
 - Electric field: $\\vec{E} = \\frac{kQ}{r^2}$
 - Kinetic energy: $KE = \\frac{1}{2}mv^2$
-- Velocity: $v_f = v_0 + at$`;
+- Velocity: $v_f = v_0 + at$
 
-      schema = {
-        type: SchemaType.OBJECT,
-        properties: {
-          questionText: { type: SchemaType.STRING, description: "The question text with LaTeX formatting for mathematical expressions." },
-          choices: {
-            type: SchemaType.ARRAY,
-            description: "An array of 4 possible answer choices with LaTeX formatting.",
-            items: { type: SchemaType.STRING },
-          },
-          correctChoice: {
-            type: SchemaType.STRING,
-            description: "The correct answer choice from the 'choices' array.",
-          },
-          explanation: {
-            type: SchemaType.STRING,
-            description: "A detailed explanation with step-by-step solution using LaTeX for mathematical expressions.",
-          },
-        },
-        required: ["questionText", "choices", "correctChoice", "explanation"],
-      };
+Return your response in the following JSON format:
+{
+  "questionText": "The question text with LaTeX formatting",
+  "choices": ["Choice A", "Choice B", "Choice C", "Choice D"],
+  "correctChoice": "Choice A",
+  "explanation": "Detailed explanation with LaTeX formatting"
+}`;
     } else {
       // FRQ
       prompt = `Generate a ${difficulty} free-response question for AP Physics C about ${topic}.
@@ -81,39 +59,32 @@ Example LaTeX formatting:
 - Kinetic energy: $KE = \\frac{1}{2}mv^2$
 - Velocity: $v_f = v_0 + at$
 - Integrals: $\\int_0^t a \\, dt$
-- Derivatives: $\\frac{dv}{dt} = a$`;
+- Derivatives: $\\frac{dv}{dt} = a$
 
-      schema = {
-        type: SchemaType.OBJECT,
-        properties: {
-          questionText: { type: SchemaType.STRING, description: "The question text with LaTeX formatting for mathematical expressions." },
-          answer: {
-            type: SchemaType.STRING,
-            description: "The final numerical answer with units and LaTeX formatting.",
-          },
-          explanation: {
-            type: SchemaType.STRING,
-            description: "A detailed step-by-step solution using LaTeX for all mathematical expressions.",
-          },
-        },
-        required: ["questionText", "answer", "explanation"],
-      };
+Return your response in the following JSON format:
+{
+  "questionText": "The question text with LaTeX formatting",
+  "answer": "The final numerical answer with units",
+  "explanation": "Detailed step-by-step solution with LaTeX formatting"
+}`;
     }
 
     try {
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: schema as any,
-        },
+      const result = await genAI.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: prompt,
       });
 
-      const response = await result.response;
-      const jsonText = response.text();
+      const jsonText = result.text;
       console.log("Gemini JSON response:", jsonText);
 
-      const parsedResponse = JSON.parse(jsonText);
+      // Extract JSON from the response
+      const jsonMatch = jsonText?.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("No valid JSON found in the AI response.");
+      }
+
+      const parsedResponse = JSON.parse(jsonMatch[0]);
 
       return {
         questionText: parsedResponse.questionText,

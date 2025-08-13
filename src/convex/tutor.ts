@@ -4,9 +4,9 @@ import { api, internal } from "./_generated/api";
 import {
   action,
 } from "./_generated/server";
-import { GoogleGenerativeAI, SchemaType } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 export const sendMessage = action({
     args: {
@@ -28,85 +28,76 @@ export const sendMessage = action({
             text: message,
         });
 
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.5-flash",
-            tools: [{ functionDeclarations: [searchResourcesTool] }],
-        });
-
         const messages = await ctx.runQuery(internal.tutorStore.getMessagesInternal, {
             conversationId,
         });
 
-        const chat = model.startChat({
-            history: messages.slice(0, -1).map((msg: any) => ({
-                role: msg.role === "model" ? "model" : "user",
-                parts: [{ text: msg.text || "" }],
-            })),
-        });
+        // Build conversation history
+        const conversationHistory = messages.slice(0, -1).map((msg: any) => 
+            `${msg.role === "model" ? "Assistant" : "User"}: ${msg.text || ""}`
+        ).join("\n");
 
-        const result = await chat.sendMessage(message);
-        const response = result.response;
+        const fullPrompt = `You are an AP Physics C tutor. Help students understand concepts and solve problems.
 
-        const functionCalls = response.functionCalls();
+Previous conversation:
+${conversationHistory}
 
-        if (functionCalls && functionCalls.length > 0) {
-            const call = functionCalls[0];
-            if (call.name === "search_resources") {
-                const args = call.args as any;
-                const { query, resourceType } = args || {};
+Current question: ${message}
+
+If the student asks about resources, you can search for them by mentioning "SEARCH_RESOURCES:" followed by the query and optionally the resource type (video, simulation, guidesheet, link).
+
+Please provide a helpful response:`;
+
+        try {
+            const result = await genAI.models.generateContent({
+                model: "gemini-1.5-flash",
+                contents: fullPrompt,
+            });
+
+            let responseText = result.text || "";
+
+            // Check if the response contains a search request
+            const searchMatch = responseText.match(/SEARCH_RESOURCES:\s*([^,\n]+)(?:,\s*([^\n]+))?/);
+            if (searchMatch) {
+                const query = searchMatch[1].trim();
+                const resourceType = searchMatch[2]?.trim();
+                
                 const searchResults = await ctx.runQuery(api.resources.searchResources, {
-                    query: query as string,
+                    query,
                     type: resourceType as "link" | "category" | "guidesheet" | "video" | "simulation" | undefined,
                 });
 
-                const toolResponse = {
-                    functionResponse: {
-                        name: "search_resources",
-                        response: {
-                            name: "search_resources",
-                            content: JSON.stringify(searchResults),
-                        },
-                    },
-                };
+                // Generate a follow-up response with the search results
+                const followUpPrompt = `Based on the search results for "${query}", provide a helpful response to the student. Here are the resources found:
 
-                const resultWithTool = await chat.sendMessage(
-                    JSON.stringify(toolResponse)
-                );
-                const responseWithTool = resultWithTool.response;
+${JSON.stringify(searchResults, null, 2)}
 
-                await ctx.runMutation(internal.tutorStore.addMessage, {
-                    conversationId,
-                    userId: user._id,
-                    role: "model",
-                    text: responseWithTool.text(),
+Original question: ${message}
+
+Provide a response that incorporates these resources:`;
+
+                const followUpResult = await genAI.models.generateContent({
+                    model: "gemini-1.5-flash",
+                    contents: followUpPrompt,
                 });
+
+                responseText = followUpResult.text || responseText;
             }
-        } else {
+
             await ctx.runMutation(internal.tutorStore.addMessage, {
                 conversationId,
                 userId: user._id,
                 role: "model",
-                text: response.text(),
+                text: responseText,
+            });
+        } catch (error) {
+            console.error("Error in tutor response:", error);
+            await ctx.runMutation(internal.tutorStore.addMessage, {
+                conversationId,
+                userId: user._id,
+                role: "model",
+                text: "I apologize, but I'm having trouble processing your request right now. Please try again.",
             });
         }
     },
 });
-
-const searchResourcesTool = {
-    name: 'search_resources',
-    description: 'Search for relevant AP Physics C resources including videos, simulations, guidesheets, and links.',
-    parameters: {
-        type: Type.OBJECT,
-        properties: {
-            query: {
-                type: Type.STRING,
-                description: 'Search query for finding resources (e.g., "capacitors", "kinematics", "electric field")',
-            } as any,
-            resourceType: {
-                type: Type.STRING,
-                description: 'Optional: Filter by resource type',
-            } as any,
-        },
-        required: ['query'],
-    },
-} as any;

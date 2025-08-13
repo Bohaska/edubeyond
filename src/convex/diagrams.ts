@@ -1,21 +1,17 @@
 import { v } from "convex/values";
 import { action, internalMutation, mutation } from "./_generated/server";
 import { GoogleGenAI } from "@google/genai";
-import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { getCurrentUser } from "./users";
 
-const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY!);
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 export const generateDiagram = action({
   args: {
     questionId: v.id("questions"),
     questionText: v.string(),
   },
-  returns: v.string(),
   handler: async (ctx, args) => {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
     const prompt = `
       Based on the following AP Physics C question, generate a clean, simple, and clear SVG diagram that illustrates the problem.
 
@@ -39,12 +35,14 @@ export const generateDiagram = action({
     `;
 
     try {
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const svgText = response.text();
+      const result = await genAI.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: prompt,
+      });
+      const svgText = result.text;
 
       // Clean the response to ensure it's valid SVG
-      const svgMatch = svgText.match(/<svg[\s\S]*?<\/svg>/);
+      const svgMatch = svgText?.match(/<svg[\s\S]*?<\/svg>/);
       if (!svgMatch) {
         throw new Error("No valid SVG found in the AI response.");
       }
