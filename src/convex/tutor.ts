@@ -37,16 +37,14 @@ export const sendMessage = action({
             `${msg.role === "model" ? "Assistant" : "User"}: ${msg.text || ""}`
         ).join("\n");
 
-        const fullPrompt = `You are an AP Physics C tutor. Help students understand concepts and solve problems.
+        const fullPrompt = `You are an AP Physics C tutor. Help students understand concepts and solve problems. At the end of every response, suggest relevant resources (like videos, simulations, or articles) that can help the student better understand the topic. You can search for these resources by mentioning "SEARCH_RESOURCES:" followed by the query and optionally the resource type (video, simulation, guidesheet, link).
 
 Previous conversation:
 ${conversationHistory}
 
 Current question: ${message}
 
-If the student asks about resources, you can search for them by mentioning "SEARCH_RESOURCES:" followed by the query and optionally the resource type (video, simulation, guidesheet, link).
-
-Please provide a helpful response:`;
+Please provide a helpful response, and remember to suggest resources at the end.`;
 
         try {
             const result = await genAI.models.generateContent({
@@ -60,11 +58,11 @@ Please provide a helpful response:`;
             const searchMatch = responseText.match(/SEARCH_RESOURCES:\s*([^,\n]+)(?:,\s*([^\n]+))?/);
             if (searchMatch) {
                 const query = searchMatch[1].trim();
-                const resourceType = searchMatch[2]?.trim();
+                const resourceType = searchMatch[2]?.trim() as "link" | "category" | "guidesheet" | "video" | "simulation" | undefined;
                 
                 const searchResults = await ctx.runQuery(api.resources.searchResources, {
                     query,
-                    type: resourceType as "link" | "category" | "guidesheet" | "video" | "simulation" | undefined,
+                    type: resourceType,
                 });
 
                 // Generate a follow-up response with the search results
@@ -74,7 +72,7 @@ ${JSON.stringify(searchResults, null, 2)}
 
 Original question: ${message}
 
-Provide a response that incorporates these resources:`;
+Provide a response that incorporates these resources, and remember to suggest other relevant resources at the end.`;
 
                 const followUpResult = await genAI.models.generateContent({
                     model: "gemini-1.5-flash",
