@@ -48,7 +48,7 @@ Please provide a helpful response, and remember to suggest resources at the end.
 
         try {
             const result = await genAI.models.generateContent({
-                model: "gemini-1.5-flash",
+                model: "gemini-2.5-flash",
                 contents: fullPrompt,
             });
 
