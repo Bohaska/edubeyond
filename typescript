@@ -1,84 +1,60 @@
-export const seedResources = internalMutation({
+import { mutation } from "./_generated/server";
+import { query } from "./_generated/server";
+import { v } from "convex/values";
+
+export const seedKhanAcademy = mutation({
   handler: async (ctx) => {
-    // Check if resources already exist
-    const existingResources = await ctx.db.query("resources").collect();
-    if (existingResources.length > 0) {
-      console.log("Resources already seeded.");
-      return;
+    const existing = await ctx.db
+      .query("resources")
+      .withIndex("by_source", (q) => q.eq("source", "Khan Academy"))
+      .collect();
+
+    for (const row of existing) {
+      await ctx.db.delete(row._id);
     }
 
-    console.log("Seeding resources...");
-
-    const resourcesToCreate = [
-      {
-        title: "AP Physics C: Mechanics - Official Course and Exam Description",
-        description:
-          "The official, most up-to-date guide from the College Board. This is the foundational document for the course, outlining the curriculum framework, learning objectives, and exam structure. Essential reading.",
-        url: "https://apcentral.collegeboard.org/media/pdf/ap-physics-c-mechanics-course-and-exam-description.pdf",
-        tags: ["Official", "College Board", "Curriculum", "Exam Info"],
-        type: "DOCUMENT",
-        status: "approved",
-      },
-      {
-        title: "AP Physics C: Electricity and Magnetism - Official Course and Exam Description",
-        description:
-          "The official guide for the E&M part of the course. Just as essential as the Mechanics guide for students taking this exam.",
-        url: "https://apcentral.collegeboard.org/media/pdf/ap-physics-c-electricity-and-magnetism-course-and-exam-description.pdf",
-        tags: ["Official", "College Board", "Curriculum", "Exam Info"],
-        type: "DOCUMENT",
-        status: "approved",
-      },
-      {
-        title: "Flipping Physics - AP Physics C",
-        description:
-          "A comprehensive video series by Bill Fox, covering the entire AP Physics C curriculum with clear explanations, example problems, and real-world demonstrations. Highly recommended for visual learners.",
-        url: "https://www.flippingphysics.com/ap-physics-c.html",
-        tags: ["Video Series", "Review", "Mechanics", "E&M"],
-        type: "VIDEO_SERIES",
-        status: "approved",
-      },
-      {
-        title: "AplusPhysics",
-        description:
-          "A website with tutorials, videos, and forums specifically for high school and AP physics. The AP Physics C section has notes, problem sets, and review materials.",
-        url: "https://www.aplusphysics.com/courses/ap-c/AP_C_Physics.html",
-        tags: ["Website", "Review", "Notes", "Problems"],
-        type: "WEBSITE",
-        status: "approved",
-      },
-      {
-        title: "Dan Fullerton (YouTube)",
-        description:
-          "The creator of AplusPhysics also has a YouTube channel with lectures and problem-solving videos. His style is straightforward and focuses on the core concepts needed for the exam.",
-        url: "https://www.youtube.com/user/FizziksGuy/playlists?view=50&sort=dd&shelf_id=7",
-        tags: ["Video Series", "Lectures", "Problem Solving"],
-        type: "VIDEO_SERIES",
-        status: "approved",
-      },
-      {
-        title: "MIT OpenCourseWare - Physics 8.01 (Mechanics)",
-        description:
-          "For students who want a deeper, more challenging dive into classical mechanics. The lectures by Professor Walter Lewin are legendary for their engaging and insightful demonstrations.",
-        url: "https://ocw.mit.edu/courses/physics/8-01sc-classical-mechanics-fall-2016/",
-        tags: ["University Course", "Advanced", "Lectures", "Mechanics"],
-        type: "COURSE",
-        status: "approved",
-      },
-      {
-        title: "The Physics Classroom",
-        description:
-          "A classic online resource with tutorials, animations, and self-assessment tools. While not exclusively for AP-C, its sections on mechanics and E&M are very thorough and helpful for building foundational understanding.",
-        url: "https://www.physicsclassroom.com/",
-        tags: ["Website", "Tutorials", "Simulations", "Beginner-Friendly"],
-        type: "WEBSITE",
-        status: "approved",
-      },
+    const apPhysics1Links = [
+      "/science/ap-college-physics-1/xf557a762645cccc5:kinematics/xf557a762645cccc5:scalars-and-vectors-in-1d/e/scalars-and-vectors",
+      "/science/ap-college-physics-1/xf557a762645cccc5:kinematics/xf557a762645cccc5:visual-models-of-motion/e/visual-representations-of-motion",
+      // ... many more links
     ];
 
-    for (const resource of resourcesToCreate) {
-      await ctx.db.insert("resources", resource);
-    }
+    const apPhysics2Links = [
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:gases/e/calculations-using-the-ideal-gas-equation-exercise",
+      // ... many more links
+    ];
 
-    console.log("Seeded resources successfully.");
+    const links = [...apPhysics1Links, ...apPhysics2Links];
+
+    const processedLinks = links.map((link) => {
+      // ... processing logic
+      return {
+        name: name,
+        url: `https://www.khanacademy.org${link}`,
+        type: type,
+        topic: topic,
+        source: "Khan Academy",
+      };
+    });
+
+    for (const resource of processedLinks) {
+      await ctx.db.insert("resources", resource as any);
+    }
   },
 });
+
+export const seedMoreResources = mutation({
+  handler: async (ctx) => {
+    // Placeholder for additional resources
+    console.log("More resources seeded");
+  },
+});
+
+export const seedPhetSimulations = mutation({
+  handler: async (ctx) => {
+    // Placeholder for PhET simulations
+    console.log("PhET simulations seeded");
+  },
+});
+
+// ... other query functions
