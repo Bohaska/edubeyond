@@ -167,10 +167,12 @@ function PhysicsBackground() {
         // Boundary conditions (elastic collision with walls)
         if (p1.x < p1.radius || p1.x > canvas.width - p1.radius) {
           p1.vx *= -0.8;
+          p1.vy += (Math.random() - 0.5) * 2; // Add randomness to bounce angle
           p1.x = Math.max(p1.radius, Math.min(canvas.width - p1.radius, p1.x));
         }
         if (p1.y < p1.radius || p1.y > canvas.height - p1.radius) {
           p1.vy *= -0.8;
+          p1.vx += (Math.random() - 0.5) * 2; // Add randomness to bounce angle
           p1.y = Math.max(p1.radius, Math.min(canvas.height - p1.radius, p1.y));
         }
 
