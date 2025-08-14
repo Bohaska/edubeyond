@@ -1,1 +1,1 @@
-npx convex run seed:all --prod
+npx convex deploy

@@ -19,6 +19,7 @@ import type * as datasets from "../datasets.js";
 import type * as diagrams from "../diagrams.js";
 import type * as http from "../http.js";
 import type * as questions from "../questions.js";
+import type * as reset from "../reset.js";
 import type * as resources from "../resources.js";
 import type * as seed from "../seed.js";
 import type * as tutor from "../tutor.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   diagrams: typeof diagrams;
   http: typeof http;
   questions: typeof questions;
+  reset: typeof reset;
   resources: typeof resources;
   seed: typeof seed;
   tutor: typeof tutor;
