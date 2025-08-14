@@ -71,10 +71,42 @@ function PhysicsBackground() {
     };
     initParticles();
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code === 'Space') {
+        event.preventDefault();
+        // Add a positive particle
+        particlesRef.current.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4,
+          charge: 1,
+          mass: 1,
+          radius: 8,
+          color: '#3b82f6', // blue for positive
+          trail: []
+        });
+        // Add a negative particle
+        particlesRef.current.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4,
+          charge: -1,
+          mass: 1,
+          radius: 6,
+          color: '#ef4444', // red for negative
+          trail: []
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
     // Physics constants
     const k = 500; // Coulomb constant (scaled for visualization)
     const damping = 0.999; // Energy damping
-    const maxSpeed = 3;
+    const maxSpeed = 5;
     const trailLength = 15;
 
     // Animation loop
@@ -200,6 +232,7 @@ function PhysicsBackground() {
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('keydown', handleKeyDown);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
