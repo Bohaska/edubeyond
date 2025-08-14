@@ -251,7 +251,7 @@ export default function Landing() {
         </motion.div>
       </div>
 
-      <div className="py-24 sm:py-32 relative z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+      <div className="py-24 sm:py-32 relative">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl lg:text-center">
             <h2 className="text-base font-semibold leading-7 text-blue-600">
