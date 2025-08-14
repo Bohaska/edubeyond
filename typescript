@@ -1,60 +1,10 @@
-import { mutation } from "./_generated/server";
-import { query } from "./_generated/server";
-import { v } from "convex/values";
-
-export const seedKhanAcademy = mutation({
-  handler: async (ctx) => {
-    const existing = await ctx.db
-      .query("resources")
-      .withIndex("by_source", (q) => q.eq("source", "Khan Academy"))
-      .collect();
-
-    for (const row of existing) {
-      await ctx.db.delete(row._id);
-    }
-
-    const apPhysics1Links = [
-      "/science/ap-college-physics-1/xf557a762645cccc5:kinematics/xf557a762645cccc5:scalars-and-vectors-in-1d/e/scalars-and-vectors",
-      "/science/ap-college-physics-1/xf557a762645cccc5:kinematics/xf557a762645cccc5:visual-models-of-motion/e/visual-representations-of-motion",
-      // ... many more links
-    ];
-
-    const apPhysics2Links = [
-      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:gases/e/calculations-using-the-ideal-gas-equation-exercise",
-      // ... many more links
-    ];
-
-    const links = [...apPhysics1Links, ...apPhysics2Links];
-
-    const processedLinks = links.map((link) => {
-      // ... processing logic
-      return {
-        name: name,
-        url: `https://www.khanacademy.org${link}`,
-        type: type,
-        topic: topic,
-        source: "Khan Academy",
-      };
-    });
-
-    for (const resource of processedLinks) {
-      await ctx.db.insert("resources", resource as any);
-    }
-  },
-});
-
-export const seedMoreResources = mutation({
-  handler: async (ctx) => {
-    // Placeholder for additional resources
-    console.log("More resources seeded");
-  },
-});
-
-export const seedPhetSimulations = mutation({
-  handler: async (ctx) => {
-    // Placeholder for PhET simulations
-    console.log("PhET simulations seeded");
-  },
-});
-
-// ... other query functions
+datasets: defineTable({
+  name: v.string(),
+  url: v.string(),
+  description: v.string(),
+  questionTypes: v.array(v.string()),
+  topics: v.array(v.string()),
+  strengths: v.string(),
+  limitations: v.string(),
+  addedBy: v.id("users"),
+}),
