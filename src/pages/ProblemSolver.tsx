@@ -1,115 +1,136 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSearchParams } from "react-router";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { useEffect } from "react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
+
+function ProblemStatement({
+  questionText,
+  choices,
+}: {
+  questionText?: string;
+  choices?: string[];
+}) {
+  return (
+    <Card className="h-full overflow-auto">
+      <CardHeader>
+        <CardTitle>Problem Statement</CardTitle>
+      </CardHeader>
+      <CardContent className="prose dark:prose-invert max-w-none">
+        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+          {questionText ?? "No question text available."}
+        </ReactMarkdown>
+        {choices && choices.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {choices.map((choice, index) => (
+              <div key={index} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted">
+                <input type="radio" name="choice" id={`choice-${index}`} className="cursor-pointer" />
+                <label htmlFor={`choice-${index}`} className="cursor-pointer flex-1">
+                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]} className="prose-p:inline">
+                    {choice}
+                  </ReactMarkdown>
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SolutionWorkspace() {
+  return (
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle>Your Solution</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground">
+          Use this space to work through the problem. Your work is not yet saved or graded.
+        </p>
+        {/* Add a text editor or other input mechanism here in the future */}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function ProblemSolver() {
+  const [searchParams] = useSearchParams();
+  const problemId = searchParams.get("id") as Id<"questions"> | null;
+
+  const problem = useQuery(
+    api.questions.getById,
+    problemId ? { id: problemId } : "skip"
+  );
+
+  const updateLastProblem = useMutation(api.users.updateLastProblem);
+
+  useEffect(() => {
+    if (problemId) {
+      updateLastProblem({ problemId });
+    }
+  }, [problemId, updateLastProblem]);
+
+  if (problemId === null) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center p-4">
+        <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
+        <h2 className="text-2xl font-semibold mb-2">No Problem Selected</h2>
+        <p className="text-muted-foreground">
+          Please select a problem from the dashboard or question library to get started.
+        </p>
+      </div>
+    );
+  }
+
+  if (problem === undefined) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-12 w-12 animate-spin" />
+      </div>
+    );
+  }
+
+  if (problem === null) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center p-4">
+        <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
+        <h2 className="text-2xl font-semibold mb-2">Problem Not Found</h2>
+        <p className="text-muted-foreground">
+          The requested problem could not be found. It may have been deleted.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-screen flex flex-col">
-      <header className="p-4 border-b flex-shrink-0">
-        <h1 className="text-2xl font-bold tracking-tight">Problem Solver</h1>
-      </header>
-      <ResizablePanelGroup
-        direction="horizontal"
-        className="flex-1 min-h-0"
-      >
-        <ResizablePanel defaultSize={40} minSize={30}>
-          <div className="p-4 h-full overflow-y-auto">
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle>Problem Statement</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-base leading-relaxed">
-                  A block of mass <strong>M</strong> is attached to a spring
-                  with spring constant <strong>k</strong> on a frictionless
-                  horizontal surface. The block is pulled to a position{" "}
-                  <strong>x = A</strong> and released from rest. Find the speed
-                  of the block when it is at position <strong>x = A/2</strong>.
-                </p>
-                {/* This will be populated with data later */}
-              </CardContent>
-            </Card>
-          </div>
-        </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={60} minSize={40}>
-          <div className="p-4 h-full">
-            <Tabs defaultValue="scratchpad" className="h-full flex flex-col">
-              <TabsList className="flex-shrink-0">
-                <TabsTrigger value="scratchpad">Scratchpad</TabsTrigger>
-                <TabsTrigger value="tutor">Ask Tutor</TabsTrigger>
-                <TabsTrigger value="hints">Hints</TabsTrigger>
-                <TabsTrigger value="resources">Resources</TabsTrigger>
-              </TabsList>
-              <TabsContent value="scratchpad" className="flex-1 mt-2 min-h-0">
-                <Card className="h-full">
-                  <CardHeader>
-                    <CardTitle>Solution Area</CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex flex-col h-[calc(100%-4rem)]">
-                    <p className="mb-2 text-sm text-muted-foreground">
-                      Use LaTeX for equations (e.g., `$$E = mc^2$$`) and the
-                      canvas for diagrams.
-                    </p>
-                    <div className="flex-1 border rounded-md p-2 mb-4">
-                      {/* LaTeX Editor + Drawing Canvas would go here */}
-                      <Textarea
-                        placeholder="Start your solution here..."
-                        className="h-full w-full resize-none border-0 focus-visible:ring-0"
-                      />
-                    </div>
-                    <Button>Verify Step</Button>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="tutor" className="flex-1 mt-2">
-                <Card className="h-full">
-                  <CardHeader>
-                    <CardTitle>AI Tutor</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>
-                      AI Tutor chat will be here, pre-loaded with problem
-                      context.
-                    </p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="hints" className="flex-1 mt-2">
-                <Card className="h-full">
-                  <CardHeader>
-                    <CardTitle>Hints</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>
-                      Step-by-step hints will be generated on demand here.
-                    </p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="resources" className="flex-1 mt-2">
-                <Card className="h-full">
-                  <CardHeader>
-                    <CardTitle>Related Resources</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>
-                      Relevant theory snippets and similar problems will appear
-                      here.
-                    </p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
-    </div>
+    <ResizablePanelGroup direction="horizontal" className="h-full max-h-full">
+      <ResizablePanel defaultSize={50}>
+        <div className="p-6 h-full">
+          <ProblemStatement
+            questionText={problem.questionText}
+            choices={problem.choices}
+          />
+        </div>
+      </ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel defaultSize={50}>
+        <div className="p-6 h-full">
+          <SolutionWorkspace />
+        </div>
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }
