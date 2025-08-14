@@ -37,9 +37,11 @@ function ProblemStatement({
               <div key={index} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted">
                 <input type="radio" name="choice" id={`choice-${index}`} className="cursor-pointer" />
                 <label htmlFor={`choice-${index}`} className="cursor-pointer flex-1">
-                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]} className="prose-p:inline">
-                    {choice}
-                  </ReactMarkdown>
+                  <div className="prose-p:inline">
+                    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      {choice}
+                    </ReactMarkdown>
+                  </div>
                 </label>
               </div>
             ))}
