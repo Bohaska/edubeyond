@@ -13,7 +13,7 @@ export const seedKhanAcademy = mutation({
       await ctx.db.delete(row._id);
     }
 
-    const links = [
+    const apPhysics1Links = [
       "/science/ap-college-physics-1/xf557a762645cccc5:kinematics/xf557a762645cccc5:scalars-and-vectors-in-1d/e/scalars-and-vectors",
       "/science/ap-college-physics-1/xf557a762645cccc5:kinematics/xf557a762645cccc5:visual-models-of-motion/e/visual-representations-of-motion",
       "/science/ap-college-physics-1/xf557a762645cccc5:kinematics/xf557a762645cccc5:visual-models-of-motion/e/v-t-area-displacement",
@@ -94,6 +94,111 @@ export const seedKhanAcademy = mutation({
       "/science/ap-college-physics-1/xf557a762645cccc5:fluids/xf557a762645cccc5:fluid-flow/test/xf557a762645cccc5:fluids-unit-test",
     ];
 
+    const apPhysics2Links = [
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:gases/e/calculations-using-the-ideal-gas-equation-exercise",
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:gases/e/kinetic-molecular-theory",
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:gases/e/rms-speed-and-average-kinetic-energy-of-gas-molecules",
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:gases/quiz/x0e2f5a2c:thermodynamics-quiz-1",
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:thermal-energy-and-thermal-equilibrium/e/understand-thermal-energy-and-equilibrium",
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:thermal-energy-and-thermal-equilibrium/e/apply-thermal-energy-and-equilibrium",
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:thermal-energy-and-thermal-equilibrium/e/understand-thermodynamics",
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:thermal-energy-and-thermal-equilibrium/e/apply-thermodynamics",
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:thermal-energy-and-thermal-equilibrium/e/apply-specific-heat-capacity",
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:thermal-energy-and-thermal-equilibrium/quiz/x0e2f5a2c:thermodynamics-quiz-2",
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:thermodynamic-processes/e/first-law-of-thermodynamics-word-problems",
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:thermodynamic-processes/e/thermodynamic-processes",
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:thermodynamic-processes/quiz/x0e2f5a2c:thermodynamics-quiz-3",
+      "/science/ap-physics-2/x0e2f5a2c:thermodynamics/x0e2f5a2c:thermodynamic-processes/test/x0e2f5a2c:thermodynamics-unit-test",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/x0e2f5a2c:electric-charge-and-electric-force/e/conservation-of-charge-quantitative-ap-physics-1",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/x0e2f5a2c:electric-charge-and-electric-force/e/charge-transfer-ap-physics-1",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/x0e2f5a2c:electric-charge-and-electric-force/e/electric-force",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/x0e2f5a2c:electric-charge-and-electric-force/quiz/x0e2f5a2c:electric-force-field-and-potential-quiz-1",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/x0e2f5a2c:electric-fields/e/force-in-electric-field",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/x0e2f5a2c:electric-fields/e/electric-field-due-to-point-charge",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/x0e2f5a2c:electric-fields/e/net-electric-field-due-to-multiple-charges-1d",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/x0e2f5a2c:electric-fields/e/superposition-principle",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/x0e2f5a2c:electric-fields/quiz/x0e2f5a2c:electric-force-field-and-potential-quiz-2",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/electric-potential-energy-electric-potential-and-voltage/e/electric-potential-definition",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/electric-potential-energy-electric-potential-and-voltage/e/electric-potential-conceptual-problems-part-1",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/electric-potential-energy-electric-potential-and-voltage/e/potential-due-to-a-system-of-charges",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/electric-potential-energy-electric-potential-and-voltage/quiz/x0e2f5a2c:electric-force-field-and-potential-quiz-3",
+      "/science/ap-physics-2/x0e2f5a2c:electric-force-field-and-potential/electric-potential-energy-electric-potential-and-voltage/test/x0e2f5a2c:electric-force-field-and-potential-unit-test",
+      "/science/ap-physics-2/x0e2f5a2c:electric-circuits/x0e2f5a2c:current-resistivity-ohms-law/e/voltage-and-ohm-s-law-ap1",
+      "/science/ap-physics-2/x0e2f5a2c:electric-circuits/x0e2f5a2c:current-resistivity-ohms-law/e/simple-circuits-numerical-ap1",
+      "/science/ap-physics-2/x0e2f5a2c:electric-circuits/x0e2f5a2c:current-resistivity-ohms-law/quiz/x0e2f5a2c:electric-circuits-quiz-1",
+      "/science/ap-physics-2/x0e2f5a2c:electric-circuits/x0e2f5a2c:compound-circuits/e/finding-equivalent-resistance",
+      "/science/ap-physics-2/x0e2f5a2c:electric-circuits/x0e2f5a2c:compound-circuits/e/simplifying-resistor-networks",
+      "/science/ap-physics-2/x0e2f5a2c:electric-circuits/x0e2f5a2c:compound-circuits/e/finding-currents-and-voltages--pure-circuits-",
+      "/science/ap-physics-2/x0e2f5a2c:electric-circuits/x0e2f5a2c:compound-circuits/quiz/x0e2f5a2c:electric-circuits-quiz-2",
+      "/science/ap-physics-2/x0e2f5a2c:electric-circuits/x0e2f5a2c:circuits-with-capacitors/test/x0e2f5a2c:electric-circuits-unit-test",
+      "/science/ap-physics-2/x0e2f5a2c:magnetism-and-electromagnetism/x0e2f5a2c:magnetic-fields/e/magnetic-field-lines--properties",
+      "/science/ap-physics-2/x0e2f5a2c:magnetism-and-electromagnetism/x0e2f5a2c:magnetism-and-moving-charges/e/direction-of-cross-product-of-two-vectors-right-hand-rule",
+      "/science/ap-physics-2/x0e2f5a2c:magnetism-and-electromagnetism/x0e2f5a2c:magnetism-and-moving-charges/e/magnetic-force-on-moving-charges",
+      "/science/ap-physics-2/x0e2f5a2c:magnetism-and-electromagnetism/x0e2f5a2c:magnetism-and-moving-charges/e/properties-of-magnetic-force-on-charged-particle",
+      "/science/ap-physics-2/x0e2f5a2c:magnetism-and-electromagnetism/x0e2f5a2c:magnetism-and-moving-charges/quiz/x0e2f5a2c:magnetism-and-electromagnetism-quiz-1",
+      "/science/ap-physics-2/x0e2f5a2c:magnetism-and-electromagnetism/x0e2f5a2c:magnetism-and-current-carrying-wires/e/apply-magnetic-field-due-to-straight-current-carrying-conductor",
+      "/science/ap-physics-2/x0e2f5a2c:magnetism-and-electromagnetism/x0e2f5a2c:magnetism-and-current-carrying-wires/e/apply-force-on-a-current-carrying-conductor-in-a-magnetic-field",
+      "/science/ap-physics-2/x0e2f5a2c:magnetism-and-electromagnetism/x0e2f5a2c:electromagnetic-induction/e/faraday-s-law-magnitude-of-induced-emf-average",
+      "/science/ap-physics-2/x0e2f5a2c:magnetism-and-electromagnetism/x0e2f5a2c:electromagnetic-induction/e/lenz-s-law-iii",
+      "/science/ap-physics-2/x0e2f5a2c:magnetism-and-electromagnetism/x0e2f5a2c:electromagnetic-induction/quiz/x0e2f5a2c:magnetism-and-electromagnetism-quiz-2",
+      "/science/ap-physics-2/x0e2f5a2c:magnetism-and-electromagnetism/x0e2f5a2c:magnetic-properties-materials/test/x0e2f5a2c:magnetism-and-electromagnetism-unit-test",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:reflection-and-mirrors/e/applications-of-concave-and-convex-mirrors",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:reflection-and-mirrors/e/ray-diagrams",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:reflection-and-mirrors/e/ray-diagrams-and-curved-mirrors",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:reflection-and-mirrors/quiz/x0e2f5a2c:geometric-optics-quiz-1",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:mirror-formula-and-magnification/e/sign-conventions",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:mirror-formula-and-magnification/e/using-mirror-formula",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:mirror-formula-and-magnification/e/using-the-magnification-formula",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:mirror-formula-and-magnification/e/nature-of-image-given-magnification",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:mirror-formula-and-magnification/e/concave-and-convex-mirrors",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:mirror-formula-and-magnification/quiz/x0e2f5a2c:geometric-optics-quiz-2",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:refraction/e/snell-s-law-of-refraction",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:refraction/e/reflection-and-refraction",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:refraction/quiz/x0e2f5a2c:geometric-optics-quiz-3",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:lenses/e/paths-of-light-rays-through-spherical-lenses",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:lenses/e/lenses-and-ray-diagrams",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:lenses/e/thin-lens-intuition",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:lenses/e/using-the-lens-formula",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:lenses/e/using-magnification-formula-for-lenses",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:lenses/e/convex-and-concave-lenses",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:lenses/e/thin-lenses-questions",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:lenses/quiz/x0e2f5a2c:geometric-optics-quiz-4",
+      "/science/ap-physics-2/x0e2f5a2c:geometric-optics/x0e2f5a2c:lenses/test/x0e2f5a2c:geometric-optics-unit-test",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:wave-properties/e/transverse-and-longitudinal-wave-exercises-ap1",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:wave-properties/e/wave-characteristics-ap1",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:wave-properties/e/numerical-wave-equation-ap1",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:wave-properties/e/graphical-wave-equation-ap1",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:wave-properties/quiz/x0e2f5a2c:waves-sound-and-physical-optics-quiz-1",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:wave-behaviors/e/wave-interference-ap-physics-1",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:wave-behaviors/e/standing-waves-ap-physics-1",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:wave-behaviors/e/standing-waves-part-2-ap1",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:wave-behaviors/quiz/x0e2f5a2c:waves-sound-and-physical-optics-quiz-2",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:sound/e/intro-to-sound-ap1",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:sound/e/beats-ap-physics-1",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:sound/e/doppler-effect-ap1",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:sound/quiz/x0e2f5a2c:waves-sound-and-physical-optics-quiz-3",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:diffraction-and-interference-of-light/e/calculate-path-difference-in-ydse",
+      "/science/ap-physics-2/x0e2f5a2c:waves-sound-and-physical-optics/x0e2f5a2c:diffraction-and-interference-of-light/test/x0e2f5a2c:waves-sound-and-physical-optics-unit-test",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:wave-particle-duality/e/de-broglie-equation",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:atoms-and-light/e/apply-atomic-spectra",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:atoms-and-light/e/electronic-transitions",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:atoms-and-light/e/kinetic-energy-of-emitted-electrons",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:atoms-and-light/e/einstein-photoelectric-equation",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:atoms-and-light/quiz/x0e2f5a2c:modern-physics-quiz-1",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:nuclear-physics/e/understand-radioactive-decay",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:nuclear-physics/e/identify-type-of-decay",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:nuclear-physics/e/apply-alpha-beta-gamma",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:nuclear-physics/e/understand-half-life-and-radiometric-dating",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:nuclear-physics/e/apply-half-life-and-radiometric-dating",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:nuclear-physics/e/understand-nuclear-fusion",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:nuclear-physics/e/understand-nuclear-fission",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:nuclear-physics/e/apply-nuclear-fission",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:nuclear-physics/quiz/x0e2f5a2c:modern-physics-quiz-2",
+      "/science/ap-physics-2/x0e2f5a2c:modern-physics/x0e2f5a2c:nuclear-physics/test/x0e2f5a2c:modern-physics-unit-test",
+    ];
+
+    const links = [...apPhysics1Links, ...apPhysics2Links];
+
     const processedLinks = links.map((link) => {
       const parts = link.split("/");
       let type = "exercise";
@@ -114,13 +219,21 @@ export const seedKhanAcademy = mutation({
       name = name.replace(/-/g, " ").replace(/ap1/g, "AP1").replace(/2d/g, "2D");
       name = name.charAt(0).toUpperCase() + name.slice(1);
 
-      let topic = "AP Physics 1";
+      let course = "AP Physics";
+      if (link.includes("ap-college-physics-1")) {
+        course = "AP Physics 1";
+      } else if (link.includes("ap-physics-2")) {
+        course = "AP Physics 2";
+      }
+
+      let topic = course;
       for (const part of parts) {
-        if (part.startsWith("xf") && part.includes(":")) {
-          topic = part
+        if (part.match(/x[a-f0-9]+:/)) {
+          const extractedTopic = part
             .split(":")[1]
             .replace(/-/g, " ")
             .replace(/(^\w{1})|(\s+\w{1})/g, (letter) => letter.toUpperCase());
+          topic = `${course} - ${extractedTopic}`;
           break;
         }
       }
