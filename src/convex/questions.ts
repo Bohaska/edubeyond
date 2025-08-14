@@ -136,20 +136,6 @@ export const saveQuestion = mutation({
 // Get questions by topic
 export const getQuestionsByTopic = query({
   args: { topic: v.string() },
-  returns: v.array(v.object({
-    _id: v.id("questions"),
-    _creationTime: v.number(),
-    topic: v.string(),
-    questionType: v.string(),
-    difficulty: v.string(),
-    questionText: v.string(),
-    answer: v.string(),
-    explanation: v.string(),
-    choices: v.optional(v.array(v.string())),
-    correctChoice: v.optional(v.string()),
-    diagram: v.optional(v.string()),
-    createdBy: v.id("users"),
-  })),
   handler: async (ctx, args) => {
     const questions = await ctx.db
       .query("questions")
@@ -164,20 +150,6 @@ export const getQuestionsByTopic = query({
 // Get all questions for a user
 export const getUserQuestions = query({
   args: {},
-  returns: v.array(v.object({
-    _id: v.id("questions"),
-    _creationTime: v.number(),
-    topic: v.string(),
-    questionType: v.string(),
-    difficulty: v.string(),
-    questionText: v.string(),
-    answer: v.string(),
-    explanation: v.string(),
-    choices: v.optional(v.array(v.string())),
-    correctChoice: v.optional(v.string()),
-    diagram: v.optional(v.string()),
-    createdBy: v.id("users"),
-  })),
   handler: async (ctx) => {
     const user = await getCurrentUser(ctx);
     if (!user) {

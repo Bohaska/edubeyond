@@ -1,1 +1,1 @@
-npx convex deploy
+npx convex run resources:seedKhanAcademy
