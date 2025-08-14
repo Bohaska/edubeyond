@@ -40,7 +40,7 @@ function PhysicsBackground() {
     // Initialize particles
     const initParticles = () => {
       particlesRef.current = [];
-      const numParticles = Math.min(12, Math.floor(window.innerWidth / 120));
+      const numParticles = 20;
       
       for (let i = 0; i < numParticles; i++) {
         const charge = Math.random() > 0.5 ? 1 : -1;
