@@ -20,7 +20,7 @@ interface Particle {
 function PhysicsBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -201,9 +201,9 @@ function PhysicsBackground() {
 
 export default function Landing() {
   return (
-    <div className="bg-white dark:bg-gray-900 relative overflow-hidden">
+    <div className="overflow-hidden min-h-screen">
       <PhysicsBackground />
-      <div className="container mx-auto px-6 py-12 relative z-10">
+      <div className="container mx-auto px-6 py-12 relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -251,7 +251,7 @@ export default function Landing() {
         </motion.div>
       </div>
 
-      <div className="py-24 sm:py-32 relative z-10">
+      <div className="py-24 sm:py-32 relative z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl lg:text-center">
             <h2 className="text-base font-semibold leading-7 text-blue-600">
