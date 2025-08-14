@@ -90,10 +90,9 @@ export default function QuestionGenerator() {
         questionType,
         difficulty,
         questionText: generatedQuestion.questionText,
-        answer: generatedQuestion.answer || generatedQuestion.correctChoice || "",
         explanation: generatedQuestion.explanation,
         choices: generatedQuestion.choices,
-        correctChoice: generatedQuestion.correctChoice,
+        correctChoice: generatedQuestion.correctChoice || "",
       });
 
       toast.success("Question saved to your library!");

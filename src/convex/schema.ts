@@ -25,6 +25,16 @@ const schema = defineSchema(
       emailVerificationTime: v.optional(v.number()),
       isAnonymous: v.optional(v.boolean()),
       role: v.optional(roleValidator),
+
+      // New fields for dashboard
+      streak: v.optional(v.number()),
+      mastery: v.optional(
+        v.object({
+          mechanics: v.number(),
+          e_and_m: v.number(),
+        }),
+      ),
+      lastProblemId: v.optional(v.id("questions")),
     }).index("email", ["email"]),
 
     resources: defineTable({

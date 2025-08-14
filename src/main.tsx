@@ -8,9 +8,12 @@ import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
+import { AppLayout } from "./components/layout/AppLayout.tsx";
+import Analytics from "./pages/Analytics.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import Landing from "./pages/Landing.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import ProblemSolver from "./pages/ProblemSolver.tsx";
 import QuestionGenerator from "./pages/QuestionGenerator.tsx";
 import Resources from "./pages/Resources.tsx";
 import Tutor from "./pages/Tutor.tsx";
@@ -48,13 +51,23 @@ createRoot(document.getElementById("root")!).render(
         <BrowserRouter>
           <RouteSyncer />
           <Routes>
-            <Route path="*" element={<NotFound />} />
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/question-generator" element={<QuestionGenerator />} />
-            <Route path="/tutor" element={<Tutor />} />
-            <Route path="/resources" element={<Resources />} />
+
+            {/* Protected Routes with AppLayout */}
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route
+                path="/question-generator"
+                element={<QuestionGenerator />}
+              />
+              <Route path="/tutor" element={<Tutor />} />
+              <Route path="/resources" element={<Resources />} />
+              <Route path="/problem-solver" element={<ProblemSolver />} />
+              <Route path="/analytics" element={<Analytics />} />
+            </Route>
+
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
         <Toaster />

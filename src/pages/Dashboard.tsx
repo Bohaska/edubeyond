@@ -1,144 +1,143 @@
-// TODO: THIS IS THE DEFAULT DASHBOARD PAGE THAT THE USER WILL SEE AFTER AUTHENTICATION. ADD MAIN FUNCTIONALITY HERE.
-// This is the entry point for users who have just signed in
-
-import { Protected } from "@/lib/protected-page";
+import { useAuth } from "@/hooks/use-auth";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Brain, Database, MessageSquare } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ArrowRight, BookCopy, LineChart, Loader2, Zap } from "lucide-react";
 import { Link } from "react-router";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+
+// Greeting Card Component
+function GreetingCard({ name, streak }: { name: string; streak: number }) {
+  return (
+    <Card className="bg-gradient-to-br from-primary/80 to-primary text-primary-foreground">
+      <CardHeader>
+        <CardTitle className="text-2xl">Welcome back, {name}!</CardTitle>
+        <CardDescription className="text-primary-foreground/80">
+          Let's keep the momentum going.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <Zap className="h-6 w-6" />
+          <div>
+            <p className="font-bold text-xl">{streak}</p>
+            <p className="text-sm">Day Streak</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Quick Continue Card Component
+function QuickContinueCard({ problemId, title }: { problemId?: string, title: string }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <BookCopy className="h-5 w-5 text-muted-foreground" />
+          <span>Continue Where You Left Off</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground mb-4">
+          You were last working on:
+        </p>
+        <h3 className="font-semibold mb-4">{title}</h3>
+        <Button asChild disabled={!problemId}>
+          <Link to={`/problem-solver?id=${problemId}`}>
+            Jump Back In <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Performance Sparklines Card Component
+function PerformanceSparklines({
+  mastery,
+}: {
+  mastery?: { mechanics: number; e_and_m: number };
+}) {
+  const performanceData = [
+    { name: "Unit 1: Mechanics", mastery: mastery?.mechanics ?? 0 },
+    { name: "Unit 2: E&M", mastery: mastery?.e_and_m ?? 0 },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Performance Overview</CardTitle>
+        <CardDescription>
+          Your mastery level across different units.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {performanceData.map((unit) => (
+          <div key={unit.name}>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="font-medium">{unit.name}</span>
+              <span className="text-muted-foreground">{unit.mastery}%</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2.5">
+              <div
+                className="bg-blue-600 h-2.5 rounded-full"
+                style={{ width: `${unit.mastery}%` }}
+              ></div>
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Dashboard() {
+  const { user, isLoading } = useAuth();
+  const lastProblem = useQuery(api.questions.getById, user?.lastProblemId ? { id: user.lastProblemId } : "skip");
+
+  if (isLoading || user === undefined) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-12 w-12 animate-spin" />
+      </div>
+    );
+  }
+
+  if (user === null) {
+    // This case should ideally be handled by the AppLayout's Protected component
+    return <p>Please sign in.</p>;
+  }
+
   return (
-    <Protected>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="container mx-auto py-8"
-      >
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold tracking-tight">AP Physics C Learning Hub</h1>
-            <p className="text-xl text-muted-foreground">
-              AI-powered question generation and dataset exploration for AP Physics C
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card className="h-full">
-                <CardHeader>
-                  <Brain className="h-8 w-8 text-blue-600 mb-2" />
-                  <CardTitle>Question Generator</CardTitle>
-                  <CardDescription>
-                    Generate AI-powered AP Physics C questions with detailed solutions
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button asChild className="w-full">
-                    <Link to="/question-generator">Start Generating</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card className="h-full">
-                <CardHeader>
-                  <MessageSquare className="h-8 w-8 text-yellow-600 mb-2" />
-                  <CardTitle>AI Tutor</CardTitle>
-                  <CardDescription>
-                    Chat with an AI tutor to get help with AP Physics C concepts
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button asChild className="w-full">
-                    <Link to="/tutor">Start Tutoring</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card className="h-full">
-                <CardHeader>
-                  <BookOpen className="h-8 w-8 text-green-600 mb-2" />
-                  <CardTitle>Question Library</CardTitle>
-                  <CardDescription>
-                    Browse and manage your saved questions organized by topic
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button asChild variant="outline" className="w-full">
-                    <Link to="/question-generator?tab=library">View Library</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card className="h-full">
-                <CardHeader>
-                  <Database className="h-8 w-8 text-purple-600 mb-2" />
-                  <CardTitle>Resource Library</CardTitle>
-                  <CardDescription>
-                    Explore curated physics resources, guides, and videos.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button asChild variant="outline" className="w-full">
-                    <Link to="/resources">Explore Resources</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Getting Started</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <h4 className="font-semibold mb-2">Question Generation Features:</h4>
-                  <ul className="space-y-1 text-muted-foreground">
-                    <li>• Multiple Choice Questions (MCQs) with explanations</li>
-                    <li>• Free Response Questions (FRQs) with step-by-step solutions</li>
-                    <li>• Adjustable difficulty levels (Easy, Medium, Hard)</li>
-                    <li>• Coverage of Mechanics and E&M topics</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2">Dataset Resources:</h4>
-                  <ul className="space-y-1 text-muted-foreground">
-                    <li>• OpenStax College Physics</li>
-                    <li>• Khan Academy Physics</li>
-                    <li>• College Board AP Physics C</li>
-                    <li>• PhET Interactive Simulations</li>
-                    <li>• Physics LibreTexts</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="container mx-auto py-8 px-6"
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-3">
+          <GreetingCard name={user.name ?? "User"} streak={user.streak ?? 0} />
         </div>
-      </motion.div>
-    </Protected>
+        <div className="lg:col-span-2">
+          <QuickContinueCard 
+            problemId={user.lastProblemId}
+            title={lastProblem?.questionText ?? "No recent problems"}
+          />
+        </div>
+        <div>
+          <PerformanceSparklines mastery={user.mastery} />
+        </div>
+      </div>
+    </motion.div>
   );
 }
