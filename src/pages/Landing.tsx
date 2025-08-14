@@ -40,15 +40,15 @@ function PhysicsBackground() {
     // Initialize particles
     const initParticles = () => {
       particlesRef.current = [];
-      const numParticles = 20;
+      const numParticles = 50;
       
       for (let i = 0; i < numParticles; i++) {
         const charge = Math.random() > 0.5 ? 1 : -1;
         particlesRef.current.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          vx: (Math.random() - 0.5) * 2,
-          vy: (Math.random() - 0.5) * 2,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4,
           charge,
           mass: 1,
           radius: charge > 0 ? 8 : 6,
