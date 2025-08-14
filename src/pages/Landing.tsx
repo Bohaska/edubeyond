@@ -84,12 +84,16 @@ function PhysicsBackground() {
           
           const dx = p2.x - p1.x;
           const dy = p2.y - p1.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          
+          let distance = Math.sqrt(dx * dx + dy * dy);
+
           if (distance > 0 && distance < 300) {
+            // Add a softening factor to prevent extreme forces at close range
+            const minDistance = 15;
+            const effectiveDistance = Math.max(distance, minDistance);
+
             // Coulomb force: F = k * q1 * q2 / r^2
-            const force = (k * p1.charge * p2.charge) / (distance * distance);
-            const forceX = -force * (dx / distance); // Negative because we want repulsion for same charges
+            const force = (k * p1.charge * p2.charge) / (effectiveDistance * effectiveDistance);
+            const forceX = -force * (dx / distance); // Use original distance for direction
             const forceY = -force * (dy / distance);
             
             fx += forceX;
