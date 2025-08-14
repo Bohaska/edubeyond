@@ -41,8 +41,13 @@ const ResourceNode = ({ resourceId }: { resourceId: Id<"resources"> }) => {
 
     if (resource.type === "simulation") {
         return (
-            <a href={resource.url} target="_blank" rel="noopener noreferrer" className="group block border rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 p-3 h-40 flex items-center justify-center">
-                <h3 className="font-semibold text-sm text-center">{resource.name}</h3>
+            <a href={resource.url} target="_blank" rel="noopener noreferrer" className="group block border rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200">
+                <div className="overflow-hidden h-40">
+                    <img src={resource.url} alt={resource.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+                </div>
+                <div className="p-3">
+                    <h3 className="font-semibold text-sm truncate">{resource.name}</h3>
+                </div>
             </a>
         )
     }
