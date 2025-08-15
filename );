@@ -1,20 +1,18 @@
-        let svgCode = codeBlockMatch ? codeBlockMatch[1] : null;
+    let svgCode = codeBlockMatch ? codeBlockMatch[1] : null;
 
-        // If not found in a code block, try to find a raw <svg> tag
-        if (!svgCode) {
-            const rawSvgMatch = text.match(/(<svg[\s\S]*<\/svg>)/);
-            svgCode = rawSvgMatch ? rawSvgMatch[1] : null;
-        }
-
-        if (svgCode) {
-            await ctx.runMutation(internal.questions.updateDiagram, {
-                questionId,
-                diagram: svgCode.trim(),
-            });
-        } else {
-            console.error("Could not extract SVG from generation result:", text);
-            throw new Error("Failed to generate a valid diagram. The AI may have returned an invalid format.");
-        }
+    // If not found in a code block, try to find a raw <svg> tag
+    if (!svgCode) {
+      const rawSvgMatch = text.match(/(<svg[\s\S]*<\/svg>)/);
+      svgCode = rawSvgMatch ? rawSvgMatch[1] : null;
     }
+
+    if (svgCode) {
+      return svgCode.trim();
+    }
+
+    console.error("Could not extract SVG from generation result:", text);
+    throw new Error(
+      "Failed to generate a valid diagram. The AI may have returned an invalid format."
+    );
+  },
 });
->>>>>>> REPLACE

@@ -423,26 +423,36 @@ function QuestionBankItem({
   setGeneratingDiagramId: (id: string | null) => void;
 }) {
   const generateDiagramAction = useAction(api.diagramActions.generateDiagram);
+  const updateDiagramMutation = useMutation(api.questions.updateDiagram);
   const deleteDiagramMutation = useMutation(api.questions.deleteDiagram);
   const isDiagramGenerating = generatingDiagramId === question._id;
 
   const handleGenerateDiagram = async () => {
     setGeneratingDiagramId(question._id);
-    const promise = generateDiagramAction({
-      questionId: question._id,
-      questionText: question.questionText,
-    });
-
-    toast.promise(promise, {
-      loading: "Generating diagram...",
-      success: "Diagram generated successfully!",
-      error: (err) => err.message || "Failed to generate diagram.",
-    });
-
     try {
-      await promise;
-    } catch (e) {
-      // handled by toast
+      const svgCode = await generateDiagramAction({
+        questionId: question._id,
+        questionText: question.questionText,
+      });
+
+      if (svgCode) {
+        const promise = updateDiagramMutation({
+          questionId: question._id,
+          diagram: svgCode,
+        });
+
+        toast.promise(promise, {
+          loading: "Saving diagram to database...",
+          success: "Diagram saved successfully!",
+          error: "Failed to save diagram.",
+        });
+        await promise;
+      } else {
+        throw new Error("Action returned no SVG code.");
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "An error occurred during diagram generation.");
     } finally {
       setGeneratingDiagramId(null);
     }

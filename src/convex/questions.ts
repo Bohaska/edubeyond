@@ -19,7 +19,7 @@ export const saveQuestion = mutation({
   },
 });
 
-export const updateDiagram = internalMutation({
+export const updateDiagram = mutation({
   args: {
     questionId: v.id("questions"),
     diagram: v.string(),
