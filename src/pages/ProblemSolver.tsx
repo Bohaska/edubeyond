@@ -38,6 +38,8 @@ export default function ProblemSolver() {
   const [resourceSearch, setResourceSearch] = useState("");
   const [showChat, setShowChat] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
+  const [submissionStatus, setSubmissionStatus] = useState<"correct" | "wrong" | null>(null);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -126,6 +128,18 @@ export default function ProblemSolver() {
     }
   };
 
+  const handleSubmitAnswer = () => {
+    if (!selectedChoice || !selectedQuestion) return;
+
+    if (selectedChoice === selectedQuestion.correctChoice) {
+      setSubmissionStatus("correct");
+      toast.success("Correct! Well done.");
+    } else {
+      setSubmissionStatus("wrong");
+      toast.error("That's not quite right. Try again!");
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -157,6 +171,8 @@ export default function ProblemSolver() {
               setSelectedQuestionId(value as Id<"questions">);
               setHints([]);
               setScratchpad("");
+              setSelectedChoice(null);
+              setSubmissionStatus(null);
             }}
             value={selectedQuestion?._id}
           >
@@ -193,19 +209,50 @@ export default function ProblemSolver() {
                   <div className="mt-4">
                     <h3 className="font-semibold mb-2">Answer Choices</h3>
                     <div className="space-y-2">
-                      {selectedQuestion.choices.map((choice, index) => (
-                        <div key={index} className="flex items-start gap-2 p-2 rounded border">
-                          <span className="font-medium text-sm min-w-[20px]">
-                            {String.fromCharCode(65 + index)}.
-                          </span>
-                          <div className="flex-1">
-                            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                              {choice}
-                            </ReactMarkdown>
+                      {selectedQuestion.choices.map((choice, index) => {
+                        const isSelected = selectedChoice === choice;
+                        const isCorrect = submissionStatus === "correct" && isSelected;
+                        const isWrong = submissionStatus === "wrong" && isSelected;
+                        const showCorrect = submissionStatus === 'correct' && choice === selectedQuestion.correctChoice;
+
+                        return (
+                          <div
+                            key={index}
+                            onClick={() => {
+                              if (submissionStatus !== "correct") {
+                                setSelectedChoice(choice);
+                                if (submissionStatus === "wrong") {
+                                  setSubmissionStatus(null);
+                                }
+                              }
+                            }}
+                            className={`flex items-start gap-2 p-3 rounded-lg border cursor-pointer transition-all
+                              ${isSelected ? 'border-primary ring-2 ring-primary/50' : ''}
+                              ${isCorrect ? 'bg-green-100 dark:bg-green-900/50 border-green-500' : ''}
+                              ${isWrong ? 'bg-red-100 dark:bg-red-900/50 border-red-500' : ''}
+                              ${showCorrect ? 'bg-green-100 dark:bg-green-900/50 border-green-500' : ''}
+                              ${submissionStatus === 'correct' ? 'cursor-not-allowed' : ''}
+                            `}
+                          >
+                            <span className="font-medium text-sm min-w-[20px] mt-1">
+                              {String.fromCharCode(65 + index)}.
+                            </span>
+                            <div className="flex-1">
+                              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                {choice}
+                              </ReactMarkdown>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
+                    <Button
+                      onClick={handleSubmitAnswer}
+                      disabled={!selectedChoice || submissionStatus === "correct"}
+                      className="mt-4 w-full"
+                    >
+                      {submissionStatus === 'correct' ? 'Answer Submitted' : 'Submit Answer'}
+                    </Button>
                   </div>
                 )}
                 {selectedQuestion.diagram && (
