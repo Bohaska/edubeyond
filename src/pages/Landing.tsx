@@ -40,9 +40,9 @@ function PhysicsBackground() {
     // Initialize particles
     const initParticles = () => {
       particlesRef.current = [];
-      const numParticles = 50;
+      const numParticles = 26;
       
-      for (let i = 0; i < numParticles / 2; i++) {
+      for (let i = 0; i < numParticles; i++) {
         // Add a positive particle
         particlesRef.current.push({
           x: Math.random() * canvas.width,
@@ -130,7 +130,7 @@ function PhysicsBackground() {
           const dy = p2.y - p1.y;
           let distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance > 0 && distance < 300) {
+          if (distance > 0 && distance < 600) {
             // Add a softening factor to prevent extreme forces at close range
             const minDistance = 15;
             const effectiveDistance = Math.max(distance, minDistance);
@@ -184,6 +184,10 @@ function PhysicsBackground() {
         
         // Fade trail
         p1.trail.forEach((point, index) => {
+          if (index == trailLength - 1){
+            //if the trail circle is farther than the trail length, clear the trail to not leave faint markings all over the place
+            point.alpha = 0
+          }
           point.alpha = index / trailLength;
         });
       }
@@ -223,6 +227,7 @@ function PhysicsBackground() {
         ctx.globalAlpha = 0.2;
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.radius * 2, 0, Math.PI * 2);
+        ctx.fillStyle = particle.color //differentiate from the white background
         ctx.fill();
       });
 
