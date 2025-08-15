@@ -42,10 +42,10 @@ export const generate = internalAction({
 
     const result = await genAI.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: prompt,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
-    const response = result.response;
-    const svgCode = response.text().trim().replace(/\n/g, '');
+
+    const svgCode = (result.text || '').trim().replace(/\n/g, '');
 
     return svgCode;
   },
