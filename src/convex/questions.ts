@@ -104,9 +104,9 @@ Guidelines:
 Generate hint ${args.hintIndex + 1}:`;
 
     try {
-      const apiKey = process.env.GOOGLE_AI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        throw new Error("Google AI API key not configured");
+        throw new Error("GEMINI_API_KEY not configured");
       }
 
       const { GoogleGenAI } = await import("@google/genai");
@@ -157,9 +157,9 @@ Guidelines:
 Respond to the student:`;
 
     try {
-      const apiKey = process.env.GOOGLE_AI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        throw new Error("Google AI API key not configured");
+        throw new Error("GEMINI_API_KEY not configured");
       }
 
       const { GoogleGenAI } = await import("@google/genai");
