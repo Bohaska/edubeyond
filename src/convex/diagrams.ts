@@ -45,7 +45,8 @@ export const generate = internalAction({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
 
-    const svgCode = (result.text || '').trim().replace(/\n/g, '');
+    const text = result.response.text();
+    const svgCode = (text || '').trim().replace(/\n/g, '');
 
     return svgCode;
   },
