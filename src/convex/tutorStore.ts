@@ -9,9 +9,7 @@ import { getCurrentUser } from "./users";
 import { ConvexError } from "convex/values";
 
 export const createConversation = mutation({
-  args: {
-    title: v.string(),
-  },
+  args: {},
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
     if (!user) {
@@ -19,8 +17,18 @@ export const createConversation = mutation({
     }
     return await ctx.db.insert("conversations", {
       userId: user._id,
-      title: args.title,
+      title: "New Conversation",
     });
+  },
+});
+
+export const updateConversationTitle = internalMutation({
+  args: {
+    conversationId: v.id("conversations"),
+    title: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.conversationId, { title: args.title });
   },
 });
 

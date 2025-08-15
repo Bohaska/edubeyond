@@ -20,6 +20,7 @@ export const sendMessage = action({
       throw new ConvexError("User not authenticated");
     }
 
+    // Add the user's message to the conversation
     await ctx.runMutation(internal.tutorStore.addMessage, {
       conversationId,
       userId: user._id,
@@ -27,12 +28,21 @@ export const sendMessage = action({
       text: message,
     });
 
+    // Fetch all messages to check if it's the first one and to build history
     const messages = await ctx.runQuery(
       internal.tutorStore.getMessagesInternal,
       {
         conversationId,
       },
     );
+
+    // If this is the first message, update the conversation title
+    if (messages.length === 1 && messages[0].role === "user") {
+      await ctx.runMutation(internal.tutorStore.updateConversationTitle, {
+        conversationId,
+        title: message.substring(0, 100),
+      });
+    }
 
     const conversationHistory = messages
       .slice(0, -1)
