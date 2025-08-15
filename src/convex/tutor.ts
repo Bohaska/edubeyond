@@ -2,7 +2,7 @@
 import { ConvexError, v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { action } from "./_generated/server";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Doc } from "./_generated/dataModel";
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
@@ -41,31 +41,59 @@ export const sendMessage = action({
       )
       .join("\n");
 
-    // Step 1: First, shorter LLM call to identify search queries
+    // Step 1: First, shorter LLM call to identify search queries using JSON mode
     const searchQueryPrompt = `A student asked the following question about AP Physics C: "${message}".
-Based on their question and the conversation history, generate up to 3 relevant search queries to find helpful online resources (videos, articles, simulations).
-Format your response ONLY with the queries, each on a new line, like this:
-SEARCH_RESOURCES: [query 1]
-SEARCH_RESOURCES: [query 2]`;
+Based on their question and the conversation history, generate up to 3 relevant search queries to find helpful online resources. You can suggest resource types like "video", "article", or "simulation".`;
 
-    const searchGenResult = await genAI.models.generateContent({
-      model: "gemini-2.5-flash", // Using a fast model for this
-      contents: [{ role: "user", parts: [{ text: searchQueryPrompt }] }],
-    });
-    const searchGenText = searchGenResult.text || "";
+    let searches: { query: string; type?: string }[] = [];
+    try {
+      const searchGenResult = await genAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [{ role: "user", parts: [{ text: searchQueryPrompt }] }],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              searches: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    query: {
+                      type: Type.STRING,
+                      description: "The search query.",
+                    },
+                    type: {
+                      type: Type.STRING,
+                      description:
+                        "Optional: 'video', 'article', or 'simulation'.",
+                    },
+                  },
+                  required: ["query"],
+                },
+              },
+            },
+          },
+        },
+      });
 
-    // Step 2: Parse queries and search for resources
-    const searches: { query: string; type?: string }[] = [];
-    if (searchGenText) {
-      const searchRegex = /SEARCH_RESOURCES:\s*([^,\n]+)(?:,\s*([^\n]+))?/g;
-      const matches = searchGenText.matchAll(searchRegex);
-      for (const match of matches) {
-        const query = match[1].trim();
-        const resourceType = match[2]?.trim();
-        if (query) searches.push({ query, type: resourceType });
+      const searchGenText = searchGenResult.text;
+      if (searchGenText) {
+        const parsedResponse = JSON.parse(searchGenText);
+        if (parsedResponse.searches && Array.isArray(parsedResponse.searches)) {
+          searches = parsedResponse.searches;
+        }
       }
+    } catch (e) {
+      console.error(
+        "Error generating or parsing search queries with JSON mode:",
+        e,
+      );
+      // We can continue without search results if this fails
     }
 
+    // Step 2: Search for resources
     let resourcesContext = "";
     if (searches.length > 0) {
       const searchPromises = searches.map((s) =>
