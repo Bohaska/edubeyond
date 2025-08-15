@@ -1,18 +1,16 @@
-    let svgCode = codeBlockMatch ? codeBlockMatch[1] : null;
+let svgCode = codeBlockMatch ? codeBlockMatch[1] : null;
 
-    // If not found in a code block, try to find a raw <svg> tag
-    if (!svgCode) {
-      const rawSvgMatch = text.match(/(<svg[\s\S]*<\/svg>)/);
-      svgCode = rawSvgMatch ? rawSvgMatch[1] : null;
-    }
+// If not found in a code block, try to find a raw <svg> tag
+if (!svgCode) {
+  const rawSvgMatch = text.match(/(<svg[\s\S]*<\/svg>)/);
+  svgCode = rawSvgMatch ? rawSvgMatch[1] : null;
+}
 
-    if (svgCode) {
-      return svgCode.trim();
-    }
+if (svgCode && svgCode.trim()) {
+  return svgCode.trim();
+}
 
-    // If no SVG is found, throw an error with the raw AI response for debugging.
-    throw new Error(
-      `Could not extract SVG from generation result. Raw AI response: ${text}`
-    );
-  },
-});
+// If no valid SVG is found, throw an error with the raw AI response for debugging.
+throw new Error(
+  `Could not extract SVG from generation result. Raw AI response: ${text}`
+);
