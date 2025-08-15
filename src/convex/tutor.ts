@@ -27,16 +27,6 @@ export const sendMessage = action({
       text: message,
     });
 
-    const modelMessageId = await ctx.runMutation(
-      internal.tutorStore.addMessage,
-      {
-        conversationId,
-        userId: user._id,
-        role: "model",
-        text: "",
-      },
-    );
-
     const messages = await ctx.runQuery(
       internal.tutorStore.getMessagesInternal,
       {
@@ -51,14 +41,78 @@ export const sendMessage = action({
       )
       .join("\n");
 
-    const fullPrompt = `You are an AP Physics C tutor. Help students understand concepts and solve problems. At the end of every response, suggest relevant resources (like videos, simulations, or articles) that can help the student better understand the topic. You can search for these resources by mentioning "SEARCH_RESOURCES:" followed by the query and optionally the resource type (video, simulation, guidesheet, link).
+    // Step 1: First, shorter LLM call to identify search queries
+    const searchQueryPrompt = `A student asked the following question about AP Physics C: "${message}".
+Based on their question and the conversation history, generate up to 3 relevant search queries to find helpful online resources (videos, articles, simulations).
+Format your response ONLY with the queries, each on a new line, like this:
+SEARCH_RESOURCES: [query 1]
+SEARCH_RESOURCES: [query 2]`;
+
+    const searchGenResult = await genAI.models.generateContent({
+      model: "gemini-2.5-flash", // Using a fast model for this
+      contents: [{ role: "user", parts: [{ text: searchQueryPrompt }] }],
+    });
+    const searchGenText = searchGenResult.text || "";
+
+    // Step 2: Parse queries and search for resources
+    const searches: { query: string; type?: string }[] = [];
+    if (searchGenText) {
+      const searchRegex = /SEARCH_RESOURCES:\s*([^,\n]+)(?:,\s*([^\n]+))?/g;
+      const matches = searchGenText.matchAll(searchRegex);
+      for (const match of matches) {
+        const query = match[1].trim();
+        const resourceType = match[2]?.trim();
+        if (query) searches.push({ query, type: resourceType });
+      }
+    }
+
+    let resourcesContext = "";
+    if (searches.length > 0) {
+      const searchPromises = searches.map((s) =>
+        ctx.runQuery(api.resources.searchResources, {
+          query: s.query,
+          type: s.type as any,
+        }),
+      );
+
+      const searchResults = (await Promise.all(searchPromises)).flat();
+
+      if (searchResults.length > 0) {
+        const uniqueResults = Array.from(
+          new Map(searchResults.map((item) => [item._id, item])).values(),
+        );
+
+        resourcesContext =
+          "Here are some relevant resources you can suggest to the student if they are appropriate. When you mention them, provide a markdown link to the URL:\n" +
+          uniqueResults
+            .map(
+              (r) =>
+                `* Name: ${r.name}, URL: ${r.url}, Topic: ${r.topic}`,
+            )
+            .join("\n");
+      }
+    }
+
+    // Step 3: Generate the final, streamed response with resource context
+    const modelMessageId = await ctx.runMutation(
+      internal.tutorStore.addMessage,
+      {
+        conversationId,
+        userId: user._id,
+        role: "model",
+        text: "",
+      },
+    );
+
+    const fullPrompt = `You are an AP Physics C tutor. Help students understand concepts and solve problems.
+${resourcesContext}
 
 Previous conversation:
 ${conversationHistory}
 
 Current question: ${message}
 
-Please provide a helpful response, and remember to suggest resources at the end.`;
+Please provide a helpful and detailed response. If you use any of the resources provided above, seamlessly integrate them into your explanation as markdown links. For example: 'You can visualize this using the [Resource Name](resource_url) simulation.'`;
 
     try {
       const stream = await genAI.models.generateContentStream({
@@ -66,57 +120,13 @@ Please provide a helpful response, and remember to suggest resources at the end.
         contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
       });
 
-      const searches: { query: string; type?: string }[] = [];
-      const searchRegex = /SEARCH_RESOURCES:\s*([^,\n]+)(?:,\s*([^\n]+))?/g;
-
       for await (const chunk of stream) {
         const chunkText = chunk.text;
-        if (!chunkText) continue;
-
-        const matches = chunkText.matchAll(searchRegex);
-        for (const match of matches) {
-          const query = match[1].trim();
-          const resourceType = match[2]?.trim();
-          searches.push({ query, type: resourceType });
-        }
-        const modifiedChunkText = chunkText.replace(searchRegex, "");
-
-        if (modifiedChunkText) {
+        if (chunkText) {
           await ctx.runMutation(internal.tutorStore.appendMessageChunk, {
             messageId: modelMessageId,
-            chunk: modifiedChunkText,
+            chunk: chunkText,
           });
-        }
-      }
-
-      if (searches.length > 0) {
-        const searchPromises = searches.map((s) =>
-          ctx.runQuery(api.resources.searchResources, {
-            query: s.query,
-            type: s.type as any,
-          }),
-        );
-
-        const searchResults = (await Promise.all(searchPromises)).flat();
-
-        if (searchResults.length > 0) {
-          let resourcesMarkdown = "\n\n**Here are some resources to help:**\n";
-          const uniqueResults = Array.from(
-            new Map(searchResults.map((item) => [item._id, item])).values(),
-          );
-
-          uniqueResults.forEach((resource: Doc<"resources">) => {
-            if (resource.url) {
-              resourcesMarkdown += `* [${resource.name}](${resource.url})\n`;
-            }
-          });
-
-          if (uniqueResults.length > 0) {
-            await ctx.runMutation(internal.tutorStore.appendMessageChunk, {
-              messageId: modelMessageId,
-              chunk: resourcesMarkdown,
-            });
-          }
         }
       }
     } catch (error) {
