@@ -8,16 +8,19 @@ export const generateDiagram = action({
     questionId: v.id("questions"),
     questionText: v.string(),
   },
-  handler: async (ctx, { questionId, questionText }) => {
-    const text = await ctx.runAction(internal.diagrams.generate, {
+  handler: async (ctx, { questionId, questionText }): Promise<{ rawResponse: string; svgCode: string }> => {
+    const result: { rawResponse: string; svgCode: string } = await ctx.runAction(internal.diagrams.generate, {
       questionText,
       questionId,
     });
 
-    if (!text) {
+    if (!result || !result.svgCode) {
       throw new Error("Diagram generation returned empty result.");
     }
 
-    // Try to extract from 
+    // Log the raw AI response to console (this will be visible in browser console when called from frontend)
+    console.log("AI Diagram Response:", result.rawResponse);
+
+    return result;
   }
 });

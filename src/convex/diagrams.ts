@@ -45,10 +45,13 @@ export const generate = internalAction({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
 
-    const text = result.text;
-    // Try to find SVG inside 
-    const svgCode = (text || '').trim().replace(/\n/g, '');
+    const rawResponse = result.text || '';
+    const svgCode = rawResponse.trim().replace(/\n/g, '');
 
-    return svgCode;
+    // Return both raw response and processed SVG
+    return {
+      rawResponse,
+      svgCode
+    };
   },
 });

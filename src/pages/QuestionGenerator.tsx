@@ -430,27 +430,18 @@ function QuestionBankItem({
   const handleGenerateDiagram = async () => {
     setGeneratingDiagramId(question._id);
     try {
-      const svgCode = await generateDiagramAction({
+      const result = await generateDiagramAction({
         questionId: question._id,
         questionText: question.questionText,
       });
 
-      if (svgCode) {
-        const promise = updateDiagramMutation({
-          questionId: question._id,
-          diagram: svgCode,
-        });
+      // Log the raw AI response to browser console
+      console.log("AI Diagram Response:", result.rawResponse);
 
-        toast.promise(promise, {
-          loading: "Saving diagram to database...",
-          success: "Diagram saved successfully!",
-          error: "Failed to save diagram.",
-        });
-        await promise;
-      } else {
-        // This case should ideally not be hit if the action throws an error
-        throw new Error("Action returned no SVG code.");
-      }
+      await updateDiagramMutation({
+        diagram: result.svgCode,
+        questionId: question._id,
+      });
     } catch (e: any) {
       console.error("Error during diagram generation:", e);
       // Log the raw AI response if it's included in the error message
