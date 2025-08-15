@@ -1,6 +1,0 @@
-await ctx.runMutation(internal.questions.addDiagramToQuestion, {
-  questionId,
-  diagram: svgCode,
-});
-
-return svgCode;
