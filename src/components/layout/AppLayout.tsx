@@ -1,6 +1,5 @@
 import { Protected } from "@/lib/protected-page";
 import { Outlet } from "react-router";
-import { Fab } from "../shared/Fab";
 import { Sidebar } from "./Sidebar";
 
 export function AppLayout() {
@@ -11,7 +10,6 @@ export function AppLayout() {
         <main className="flex-1 ml-16 md:ml-64 transition-all duration-300 ease-in-out">
           <Outlet />
         </main>
-        <Fab />
       </div>
     </Protected>
   );
