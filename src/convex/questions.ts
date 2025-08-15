@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation, action } from "./_generated/server";
 import { getCurrentUser } from "./users";
+import { GoogleGenerativeAI } from "@google/genai";
 
 export const getById = query({
   args: { id: v.id("questions") },
