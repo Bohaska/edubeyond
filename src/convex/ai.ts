@@ -53,7 +53,6 @@ Generate hint ${args.hintIndex + 1}:`;
         throw new Error("GEMINI_API_KEY environment variable not set!");
       }
 
-      const { GoogleGenAI } = await import("@google/genai");
       const ai = new GoogleGenAI({ apiKey: apiKey });
 
       const response = await ai.models.generateContent({
@@ -107,7 +106,6 @@ Respond to the student:`;
         throw new Error("GEMINI_API_KEY environment variable not set!");
       }
 
-      const { GoogleGenAI } = await import("@google/genai");
       const ai = new GoogleGenAI({ apiKey: apiKey });
 
       const response = await ai.models.generateContent({
