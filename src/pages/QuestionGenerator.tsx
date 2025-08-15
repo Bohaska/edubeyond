@@ -47,6 +47,9 @@ import {
   ExternalLink,
   Loader2,
   Trash2,
+  Calculator,
+  Image,
+  ChevronDown,
 } from "lucide-react";
 
 const formSchema = z.object({
