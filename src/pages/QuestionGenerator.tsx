@@ -70,6 +70,9 @@ export default function QuestionGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedQuestion, setGeneratedQuestion] =
     useState<GeneratedQuestion | null>(null);
+  const [generatingDiagramId, setGeneratingDiagramId] = useState<string | null>(
+    null
+  );
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -338,15 +341,20 @@ export default function QuestionGenerator() {
           </Card>
         </div>
       </div>
-      <QuestionBank generatingDiagramId={null} />
+      <QuestionBank
+        generatingDiagramId={generatingDiagramId}
+        setGeneratingDiagramId={setGeneratingDiagramId}
+      />
     </div>
   );
 }
 
 function QuestionBank({
   generatingDiagramId,
+  setGeneratingDiagramId,
 }: {
   generatingDiagramId: string | null;
+  setGeneratingDiagramId: (id: string | null) => void;
 }) {
   const { user } = useAuth();
   const questions = useQuery(
@@ -395,6 +403,7 @@ function QuestionBank({
                 key={question._id}
                 question={question}
                 generatingDiagramId={generatingDiagramId}
+                setGeneratingDiagramId={setGeneratingDiagramId}
               />
             ))}
           </Accordion>
@@ -407,16 +416,18 @@ function QuestionBank({
 function QuestionBankItem({
   question,
   generatingDiagramId,
+  setGeneratingDiagramId,
 }: {
   question: Doc<"questions">;
   generatingDiagramId: string | null;
+  setGeneratingDiagramId: (id: string | null) => void;
 }) {
   const generateDiagramAction = useAction(api.diagramActions.generateDiagram);
   const deleteDiagramMutation = useMutation(api.questions.deleteDiagram);
-  const [isDiagramGenerating, setIsDiagramGenerating] = useState(false);
+  const isDiagramGenerating = generatingDiagramId === question._id;
 
   const handleGenerateDiagram = async () => {
-    setIsDiagramGenerating(true);
+    setGeneratingDiagramId(question._id);
     const promise = generateDiagramAction({
       questionId: question._id,
       questionText: question.questionText,
@@ -433,7 +444,7 @@ function QuestionBankItem({
     } catch (e) {
       // handled by toast
     } finally {
-      setIsDiagramGenerating(false);
+      setGeneratingDiagramId(null);
     }
   };
 
