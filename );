@@ -10,9 +10,9 @@
       return svgCode.trim();
     }
 
-    console.error("Could not extract SVG from generation result:", text);
+    // If no SVG is found, throw an error with the raw AI response for debugging.
     throw new Error(
-      "Failed to generate a valid diagram. The AI may have returned an invalid format."
+      `Could not extract SVG from generation result. Raw AI response: ${text}`
     );
   },
 });

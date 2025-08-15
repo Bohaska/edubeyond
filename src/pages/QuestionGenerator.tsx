@@ -448,10 +448,15 @@ function QuestionBankItem({
         });
         await promise;
       } else {
+        // This case should ideally not be hit if the action throws an error
         throw new Error("Action returned no SVG code.");
       }
     } catch (e: any) {
-      console.error(e);
+      console.error("Error during diagram generation:", e);
+      // Log the raw AI response if it's included in the error message
+      if (e.message.includes("Raw AI response:")) {
+        console.log("Raw AI Response from server:", e.message);
+      }
       toast.error(e.message || "An error occurred during diagram generation.");
     } finally {
       setGeneratingDiagramId(null);
