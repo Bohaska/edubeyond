@@ -3,6 +3,7 @@
 import { action } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
+import { GoogleGenAI } from "@google/genai";
 
 export const generateHint = action({
   args: {
