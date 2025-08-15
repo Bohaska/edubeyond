@@ -48,7 +48,7 @@ type GeneratedQuestion = {
 
 export default function QuestionGenerator() {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const generateQuestion = useAction(api.questions.generateQuestion);
+  const generateQuestion = useAction(api.questionGeneration.generateQuestion);
   const saveQuestion = useMutation(api.questions.saveQuestion);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedQuestion, setGeneratedQuestion] =

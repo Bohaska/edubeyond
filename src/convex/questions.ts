@@ -1,4 +1,3 @@
-
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -39,5 +38,12 @@ export const getQuestionsByTopic = query({
       .withIndex("by_topic", (q) => q.eq("topic", args.topic))
       .order("desc")
       .collect();
+  },
+});
+
+export const getById = query({
+  args: { id: v.id("questions") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
   },
 });
