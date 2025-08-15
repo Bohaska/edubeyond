@@ -45,7 +45,7 @@ export const generate = internalAction({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
 
-    const text = result.response.text();
+    const text = result.text;
     const svgCode = (text || '').trim().replace(/\n/g, '');
 
     return svgCode;

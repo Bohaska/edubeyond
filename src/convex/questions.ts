@@ -78,7 +78,7 @@ export const generateQuestion = action({
     const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
     const prompt = `
-      You are an expert AP Physics C tutor. Your task is to generate a high-quality, original practice question.
+      You are an expert AP Physics C tutor. Your task is to generate a high-quality, original practice question in JSON format.
 
       Please generate a question based on the following parameters:
       - Topic: ${args.topic}
@@ -90,11 +90,53 @@ export const generateQuestion = action({
       - The explanation should be clear, concise, and provide a step-by-step solution.
       - For MCQ questions, the incorrect choices (distractors) should be plausible and target common student misconceptions.
       - Ensure the question and explanation are formatted with LaTeX for mathematical expressions where appropriate (e.g., using $...$ for inline and $$...$$ for block equations).
+      
+      **Output Format:**
+      Return ONLY the JSON object matching the provided schema. Do not include any other text, explanations, or markdown formatting.
     `;
+
+    const isMCQ = args.questionType === "MCQ";
+
+    const properties: any = {
+      questionText: {
+        type: Type.STRING,
+        description:
+          "The full text of the question, including any LaTeX formatting.",
+      },
+      explanation: {
+        type: Type.STRING,
+        description:
+          "A detailed step-by-step explanation for the solution, including LaTeX.",
+      },
+    };
+    const required = ["questionText", "explanation"];
+
+    if (isMCQ) {
+      properties.choices = {
+        type: Type.ARRAY,
+        description: "An array of strings for the multiple-choice options.",
+        items: { type: Type.STRING },
+      };
+      properties.correctChoice = {
+        type: Type.STRING,
+        description: "The correct answer from the choices array.",
+      };
+      required.push("choices", "correctChoice");
+    }
+
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties,
+      required,
+    };
 
     const result = await genAI.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: prompt,
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: responseSchema,
+      },
     });
 
     const text = result.text;
