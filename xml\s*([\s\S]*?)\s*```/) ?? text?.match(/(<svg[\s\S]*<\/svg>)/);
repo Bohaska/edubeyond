@@ -1,9 +1,0 @@
-    let svgCode = svgMatch ? (svgMatch[1] ?? svgMatch[0]).trim() : "";
-
-    if (!svgCode && text) {
-      // Fallback if no code block is found, just use the text and hope for the best
-      svgCode = text.trim();
-    }
-
-    return svgCode;
->>>>>>> REPLACE
