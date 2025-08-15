@@ -303,3 +303,10 @@ export const searchResources = query({
     return await ctx.db.query("resources").collect();
   },
 });
+
+export const list = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("resources").collect();
+  },
+});
