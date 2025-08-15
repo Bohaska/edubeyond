@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation, action } from "./_generated/server";
 import { getCurrentUser } from "./users";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
 export const getById = query({
   args: { id: v.id("questions") },
@@ -34,17 +34,11 @@ export const saveQuestion = mutation({
     choices: v.optional(v.array(v.string())),
     correctChoice: v.optional(v.string()),
     diagram: v.optional(v.string()),
+    createdBy: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-    if (!user) {
-      throw new Error("User must be authenticated");
-    }
-    
-    return await ctx.db.insert("questions", {
-      ...args,
-      createdBy: user._id,
-    });
+    const questionId = await ctx.db.insert("questions", args);
+    return questionId;
   },
 });
 
@@ -56,7 +50,6 @@ export const generateQuestion = action({
   },
   handler: async (ctx, args) => {
     const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-    const model = genAI.models.generateContent;
 
     const prompt = `
       You are an expert AP Physics C tutor. Your task is to generate a high-quality, original practice question.
@@ -66,38 +59,82 @@ export const generateQuestion = action({
       - Question Type: ${args.questionType}
       - Difficulty: ${args.difficulty}
 
-      **Output Format Instructions:**
-      - Return the output as a single, minified JSON object.
-      - Do NOT include any markdown formatting (e.g., \`\`\`json).
-      - The JSON object must have the following keys: "questionText" (string), "explanation" (string).
-      - If the questionType is "MCQ", the JSON object must also include: "choices" (an array of 4 strings) and "correctChoice" (a string that exactly matches one of the items in "choices").
-      - For "FRQ" questions, do not include "choices" or "correctChoice".
-      - Ensure all strings in the JSON are properly escaped.
-
       **Content Guidelines:**
       - The question should be challenging and at the AP Physics C level.
       - The explanation should be clear, concise, and provide a step-by-step solution.
       - For MCQ questions, the incorrect choices (distractors) should be plausible and target common student misconceptions.
+      - Ensure the question and explanation are formatted with LaTeX for mathematical expressions where appropriate (e.g., using $...$ for inline and $$...$$ for block equations).
     `;
 
-    const result = await model({
+    const isMCQ = args.questionType === "MCQ";
+
+    const baseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        questionText: {
+          type: Type.STRING,
+          description:
+            "The text of the question, including any necessary context or diagrams described in text. Use LaTeX for equations.",
+        },
+        explanation: {
+          type: Type.STRING,
+          description:
+            "A detailed, step-by-step explanation for the correct answer. Use LaTeX for equations.",
+        },
+      },
+    };
+
+    const mcqSchema = {
+      ...baseSchema,
+      properties: {
+        ...baseSchema.properties,
+        choices: {
+          type: Type.ARRAY,
+          description:
+            "An array of 4 strings representing the multiple-choice options.",
+          items: {
+            type: Type.STRING,
+          },
+        },
+        correctChoice: {
+          type: Type.STRING,
+          description:
+            "The string from the 'choices' array that is the correct answer.",
+        },
+      },
+      required: ["questionText", "explanation", "choices", "correctChoice"],
+    };
+
+    const frqSchema = {
+      ...baseSchema,
+      required: ["questionText", "explanation"],
+    };
+
+    const result = await genAI.models.generateContent({
       model: "gemini-1.5-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }] }]
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: isMCQ ? mcqSchema : frqSchema,
+      },
     });
-    
-    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-    
+
+    const text = result.text;
+
     if (!text) {
-      throw new Error("No response text received from AI model");
+      throw new Error("No response text received from AI");
     }
-    
+
     try {
-      // Attempt to parse the text to ensure it's valid JSON
+      // The response should be a JSON string that can be parsed.
       const parsed = JSON.parse(text);
       return parsed;
     } catch (e) {
       console.error("Failed to parse AI response as JSON:", text);
-      throw new Error("AI response was not valid JSON.");
+      console.error("Original error:", e);
+      throw new Error(
+        "AI response was not valid JSON, despite schema enforcement.",
+      );
     }
   },
 });
