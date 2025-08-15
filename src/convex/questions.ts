@@ -1,4 +1,7 @@
-import { internalMutation, mutation, query } from "./_generated/server";
+"use node";
+
+import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { getCurrentUser } from "./users";
 
@@ -68,19 +71,21 @@ export const getById = query({
   },
 });
 
-export const generateHint = mutation({
+const getQuestionForHint = internalQuery({
+  args: { questionId: v.id("questions") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.questionId);
+  },
+});
+
+export const generateHint = action({
   args: {
     questionId: v.id("questions"),
     hintIndex: v.number(),
     context: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
-
-    const question = await ctx.db.get(args.questionId);
+    const question = await ctx.runQuery(getQuestionForHint, { questionId: args.questionId });
     if (!question) {
       throw new Error("Question not found");
     }
