@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const saveQuestion = mutation({
@@ -16,6 +16,25 @@ export const saveQuestion = mutation({
   handler: async (ctx, args) => {
     const questionId = await ctx.db.insert("questions", args);
     return questionId;
+  },
+});
+
+export const updateDiagram = internalMutation({
+  args: {
+    questionId: v.id("questions"),
+    diagram: v.string(),
+  },
+  handler: async (ctx, { questionId, diagram }) => {
+    await ctx.db.patch(questionId, { diagram });
+  },
+});
+
+export const deleteDiagram = mutation({
+  args: {
+    questionId: v.id("questions"),
+  },
+  handler: async (ctx, { questionId }) => {
+    await ctx.db.patch(questionId, { diagram: undefined });
   },
 });
 

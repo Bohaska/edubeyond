@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAction, useMutation } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -28,9 +28,15 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { Doc, Id } from "@/convex/_generated/dataModel";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const formSchema = z.object({
   topic: z.string().min(1, "Please select a topic."),
@@ -321,6 +327,197 @@ export default function QuestionGenerator() {
           </Card>
         </div>
       </div>
+      <QuestionBank />
     </div>
+  );
+}
+
+function QuestionBank() {
+  const { user } = useAuth();
+  const questions = useQuery(
+    api.questions.getUserQuestions,
+    user ? { userId: user._id } : "skip"
+  );
+
+  if (!user) {
+    return (
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>My Question Library</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            Please log in to see your saved questions.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (questions === undefined) {
+    return (
+      <div className="flex items-center justify-center mt-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <Card className="mt-8">
+      <CardHeader>
+        <CardTitle>My Question Library</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {questions.length === 0 ? (
+          <p className="text-muted-foreground">
+            You haven't saved any questions yet. Generate and save a question to
+            get started!
+          </p>
+        ) : (
+          <Accordion type="single" collapsible className="w-full">
+            {questions.map((question) => (
+              <QuestionBankItem key={question._id} question={question} />
+            ))}
+          </Accordion>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function QuestionBankItem({ question }: { question: Doc<"questions"> }) {
+  const generateDiagramAction = useAction(api.diagramActions.generateDiagram);
+  const deleteDiagramMutation = useMutation(api.questions.deleteDiagram);
+  const [isDiagramGenerating, setIsDiagramGenerating] = useState(false);
+
+  const handleGenerateDiagram = async () => {
+    setIsDiagramGenerating(true);
+    const promise = generateDiagramAction({
+      questionId: question._id,
+      questionText: question.questionText,
+    });
+
+    toast.promise(promise, {
+      loading: "Generating diagram...",
+      success: "Diagram generated successfully!",
+      error: (err) => err.message || "Failed to generate diagram.",
+    });
+
+    try {
+      await promise;
+    } catch (e) {
+      // handled by toast
+    } finally {
+      setIsDiagramGenerating(false);
+    }
+  };
+
+  const handleDeleteDiagram = async () => {
+    const promise = deleteDiagramMutation({ questionId: question._id });
+    toast.promise(promise, {
+      loading: "Deleting diagram...",
+      success: "Diagram deleted.",
+      error: "Failed to delete diagram.",
+    });
+  };
+
+  return (
+    <AccordionItem value={question._id}>
+      <AccordionTrigger>
+        <div className="flex justify-between w-full pr-4 items-center">
+          <span className="text-left font-medium">
+            {question.topic} - {question.questionType} ({question.difficulty})
+          </span>
+          <span className="text-muted-foreground text-sm font-normal">
+            {new Date(question._creationTime).toLocaleDateString()}
+          </span>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent>
+        <div className="space-y-4 pt-2">
+          <div>
+            <h4 className="font-semibold text-sm mb-1">Question</h4>
+            <ReactMarkdown
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+            >
+              {question.questionText}
+            </ReactMarkdown>
+          </div>
+          {question.choices && (
+            <div>
+              <h4 className="font-semibold text-sm mb-1">Choices</h4>
+              <ul className="list-disc pl-5 space-y-1">
+                {question.choices.map((choice, index) => (
+                  <li key={index}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                    >
+                      {choice}
+                    </ReactMarkdown>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {question.correctChoice && (
+            <div>
+              <h4 className="font-semibold text-sm mb-1">Correct Answer</h4>
+              <ReactMarkdown
+                remarkPlugins={[remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+              >
+                {question.correctChoice}
+              </ReactMarkdown>
+            </div>
+          )}
+          <div>
+            <h4 className="font-semibold text-sm mb-1">Explanation</h4>
+            <ReactMarkdown
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+            >
+              {question.explanation}
+            </ReactMarkdown>
+          </div>
+
+          <div className="space-y-2 pt-2">
+            <h4 className="font-semibold text-sm">Diagram</h4>
+            {question.diagram ? (
+              <div
+                className="p-4 border rounded-lg bg-white overflow-auto"
+                dangerouslySetInnerHTML={{ __html: question.diagram }}
+              />
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No diagram for this question yet.
+              </p>
+            )}
+            <div className="flex gap-2 pt-2">
+              <Button
+                onClick={handleGenerateDiagram}
+                disabled={isDiagramGenerating}
+                size="sm"
+              >
+                {isDiagramGenerating && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {question.diagram ? "Regenerate Diagram" : "Generate Diagram"}
+              </Button>
+              {question.diagram && (
+                <Button
+                  onClick={handleDeleteDiagram}
+                  variant="outline"
+                  size="sm"
+                >
+                  Delete Diagram
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </AccordionContent>
+    </AccordionItem>
   );
 }

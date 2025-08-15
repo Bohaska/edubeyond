@@ -46,6 +46,7 @@ export const generate = internalAction({
     });
 
     const text = result.text;
+    // Try to find SVG inside 
     const svgCode = (text || '').trim().replace(/\n/g, '');
 
     return svgCode;

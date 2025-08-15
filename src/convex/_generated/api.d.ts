@@ -16,6 +16,7 @@ import type {
 import type * as auth_emailOtp from "../auth/emailOtp.js";
 import type * as auth from "../auth.js";
 import type * as datasets from "../datasets.js";
+import type * as diagramActions from "../diagramActions.js";
 import type * as diagrams from "../diagrams.js";
 import type * as http from "../http.js";
 import type * as questionGeneration from "../questionGeneration.js";
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   "auth/emailOtp": typeof auth_emailOtp;
   auth: typeof auth;
   datasets: typeof datasets;
+  diagramActions: typeof diagramActions;
   diagrams: typeof diagrams;
   http: typeof http;
   questionGeneration: typeof questionGeneration;
