@@ -46,7 +46,8 @@ export const generate = internalAction({
     });
 
     const rawResponse = result.text || '';
-    const svgCode = rawResponse.trim().replace(/\n/g, '');
+    const svgMatch = rawResponse.match(/<svg[\s\S]*?<\/svg>/);
+    const svgCode = svgMatch ? svgMatch[0] : '';
 
     // Return both raw response and processed SVG
     return {
