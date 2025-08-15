@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation, action } from "./_generated/server";
 import { getCurrentUser } from "./users";
-import { GoogleGenerativeAI } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 export const getById = query({
   args: { id: v.id("questions") },
@@ -55,18 +55,49 @@ export const generateQuestion = action({
     difficulty: v.string(),
   },
   handler: async (ctx, args) => {
-    // Placeholder for AI question generation
-    // This would integrate with an AI service like OpenAI
-    const mockQuestion = {
-      topic: args.topic,
-      questionType: args.questionType,
-      difficulty: args.difficulty,
-      questionText: `Sample ${args.questionType} question about ${args.topic} at ${args.difficulty} difficulty level.`,
-      explanation: "This is a sample explanation for the generated question.",
-      choices: args.questionType === "MCQ" ? ["Option A", "Option B", "Option C", "Option D"] : undefined,
-      correctChoice: args.questionType === "MCQ" ? "Option A" : undefined,
-    };
+    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+    const model = genAI.models.generateContent;
+
+    const prompt = `
+      You are an expert AP Physics C tutor. Your task is to generate a high-quality, original practice question.
+
+      Please generate a question based on the following parameters:
+      - Topic: ${args.topic}
+      - Question Type: ${args.questionType}
+      - Difficulty: ${args.difficulty}
+
+      **Output Format Instructions:**
+      - Return the output as a single, minified JSON object.
+      - Do NOT include any markdown formatting (e.g., \`\`\`json).
+      - The JSON object must have the following keys: "questionText" (string), "explanation" (string).
+      - If the questionType is "MCQ", the JSON object must also include: "choices" (an array of 4 strings) and "correctChoice" (a string that exactly matches one of the items in "choices").
+      - For "FRQ" questions, do not include "choices" or "correctChoice".
+      - Ensure all strings in the JSON are properly escaped.
+
+      **Content Guidelines:**
+      - The question should be challenging and at the AP Physics C level.
+      - The explanation should be clear, concise, and provide a step-by-step solution.
+      - For MCQ questions, the incorrect choices (distractors) should be plausible and target common student misconceptions.
+    `;
+
+    const result = await model({
+      model: "gemini-1.5-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }]
+    });
     
-    return mockQuestion;
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!text) {
+      throw new Error("No response text received from AI model");
+    }
+    
+    try {
+      // Attempt to parse the text to ensure it's valid JSON
+      const parsed = JSON.parse(text);
+      return parsed;
+    } catch (e) {
+      console.error("Failed to parse AI response as JSON:", text);
+      throw new Error("AI response was not valid JSON.");
+    }
   },
 });

@@ -30,7 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useAuth } from "@/hooks/use-auth";
-import { Spinner } from "@/components/ui/spinner";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   topic: z.string().min(1, "Please select a topic."),
@@ -88,7 +88,7 @@ export default function QuestionGenerator() {
     };
 
     try {
-      await saveQuestion({ questionData });
+      await saveQuestion(questionData);
       toast.success("Question saved to your library!");
     } catch (error) {
       console.error(error);
@@ -225,7 +225,7 @@ export default function QuestionGenerator() {
                   <Button type="submit" disabled={isGenerating}>
                     {isGenerating ? (
                       <>
-                        <Spinner className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Generating...
                       </>
                     ) : (
@@ -245,7 +245,7 @@ export default function QuestionGenerator() {
             <CardContent>
               {isGenerating && (
                 <div className="flex items-center justify-center h-full">
-                  <Spinner size="lg" />
+                  <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
               )}
               {generatedQuestion && (
