@@ -213,11 +213,11 @@ export default function ProblemSolver() {
                     </div>
                     
                     {selectedQuestion.diagram && (
-                      <div className="border rounded-lg p-4 bg-muted/50">
-                        <img 
-                          src={selectedQuestion.diagram} 
-                          alt="Problem diagram"
-                          className="max-w-full h-auto mx-auto"
+                      <div className="mt-4">
+                        <h3 className="font-semibold mb-2">Diagram</h3>
+                        <div
+                          className="rounded-lg border p-4 bg-white"
+                          dangerouslySetInnerHTML={{ __html: selectedQuestion.diagram }}
                         />
                       </div>
                     )}
