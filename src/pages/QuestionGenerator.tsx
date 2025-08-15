@@ -8,12 +8,25 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import { Link } from "react-router";
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -26,17 +39,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
-import { Doc, Id } from "@/convex/_generated/dataModel";
+import { Id, Doc } from "@/convex/_generated/dataModel";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  ExternalLink,
+  Loader2,
+  Trash2,
+} from "lucide-react";
 
 const formSchema = z.object({
   topic: z.string().min(1, "Please select a topic."),
@@ -327,12 +338,16 @@ export default function QuestionGenerator() {
           </Card>
         </div>
       </div>
-      <QuestionBank />
+      <QuestionBank generatingDiagramId={null} />
     </div>
   );
 }
 
-function QuestionBank() {
+function QuestionBank({
+  generatingDiagramId,
+}: {
+  generatingDiagramId: string | null;
+}) {
   const { user } = useAuth();
   const questions = useQuery(
     api.questions.getUserQuestions,
@@ -376,7 +391,11 @@ function QuestionBank() {
         ) : (
           <Accordion type="single" collapsible className="w-full">
             {questions.map((question) => (
-              <QuestionBankItem key={question._id} question={question} />
+              <QuestionBankItem
+                key={question._id}
+                question={question}
+                generatingDiagramId={generatingDiagramId}
+              />
             ))}
           </Accordion>
         )}
@@ -385,7 +404,13 @@ function QuestionBank() {
   );
 }
 
-function QuestionBankItem({ question }: { question: Doc<"questions"> }) {
+function QuestionBankItem({
+  question,
+  generatingDiagramId,
+}: {
+  question: Doc<"questions">;
+  generatingDiagramId: string | null;
+}) {
   const generateDiagramAction = useAction(api.diagramActions.generateDiagram);
   const deleteDiagramMutation = useMutation(api.questions.deleteDiagram);
   const [isDiagramGenerating, setIsDiagramGenerating] = useState(false);
@@ -503,17 +528,24 @@ function QuestionBankItem({ question }: { question: Doc<"questions"> }) {
                 {isDiagramGenerating && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {question.diagram ? "Regenerate Diagram" : "Generate Diagram"}
+                {question.diagram ? "Regenerate" : "Generate"} Diagram
               </Button>
               {question.diagram && (
                 <Button
                   onClick={handleDeleteDiagram}
-                  variant="outline"
+                  variant="destructive"
                   size="sm"
                 >
+                  <Trash2 className="h-4 w-4 mr-2" />
                   Delete Diagram
                 </Button>
               )}
+              <Button size="sm" variant="outline" asChild>
+                <Link to={`/problem-solver?id=${question._id}`}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open in Problem Solver
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
