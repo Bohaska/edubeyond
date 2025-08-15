@@ -15,6 +15,11 @@ import { motion } from "framer-motion";
 import { MessageCircle, Lightbulb, BookOpen, FileText, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Id } from "@/convex/_generated/dataModel";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 interface Message {
   role: "user" | "model";
@@ -32,6 +37,7 @@ export default function ProblemSolver() {
   const [loadingHints, setLoadingHints] = useState<{ [key: number]: boolean }>({});
   const [resourceSearch, setResourceSearch] = useState("");
   const [showChat, setShowChat] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -140,332 +146,197 @@ export default function ProblemSolver() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold tracking-tight">Problem Solver</h1>
-          <p className="text-muted-foreground mt-2">
-            Work through physics problems with AI assistance, hints, and resources
-          </p>
-        </div>
+    <div className="flex flex-col h-screen p-4 gap-4 bg-gray-50 dark:bg-gray-900">
+      {/* Top Problem Selector Bar */}
+      <Card>
+        <CardContent className="p-4">
+          <h2 className="text-lg font-semibold mb-2">Select a Problem</h2>
+          <Select
+            onValueChange={(value) => {
+              setSelectedQuestionId(value as Id<"questions">);
+              setHints([]);
+              setScratchpad("");
+            }}
+            value={selectedQuestion?._id}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Choose a question to start solving" />
+            </SelectTrigger>
+            <SelectContent>
+              {questions?.map((question: any) => (
+                <SelectItem key={question._id} value={question._id}>
+                  {question.topic}: {question.questionText.substring(0, 100)}...
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Question Selection */}
-          <div className="lg:col-span-1">
-            <Card>
+      {selectedQuestion ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 overflow-hidden">
+          {/* Left Column */}
+          <div className="flex flex-col gap-4 overflow-y-auto">
+            {/* Problem Statement */}
+            <Card className="flex-shrink-0">
               <CardHeader>
-                <CardTitle className="text-lg">Select Problem</CardTitle>
+                <CardTitle>Problem Statement</CardTitle>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-96">
-                  <div className="space-y-2">
-                    {questions?.map((question) => (
-                      <Button
-                        key={question._id}
-                        variant={selectedQuestionId === question._id ? "default" : "outline"}
-                        className="w-full justify-start text-left h-auto p-3"
-                        onClick={() => {
-                          setSelectedQuestionId(question._id);
-                          setHints([]);
-                          setChatMessages([]);
-                          setScratchpad("");
-                        }}
-                      >
-                        <div className="space-y-1">
-                          <div className="font-medium text-sm">
-                            {question.topic} - {question.questionType}
-                          </div>
-                          <div className="text-xs text-muted-foreground line-clamp-2">
-                            {question.questionText.substring(0, 100)}...
-                          </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {question.difficulty}
-                          </Badge>
-                        </div>
-                      </Button>
-                    ))}
+                <div className="prose dark:prose-invert max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                    {selectedQuestion.questionText}
+                  </ReactMarkdown>
+                </div>
+                {selectedQuestion.diagram && (
+                  <div className="mt-4">
+                    <h3 className="font-semibold mb-2">Diagram</h3>
+                    <div
+                      className="rounded-lg border p-4 bg-white"
+                      dangerouslySetInnerHTML={{ __html: selectedQuestion.diagram }}
+                    />
                   </div>
-                </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Resources */}
+            <Card className="flex-1">
+              <CardHeader>
+                <CardTitle>Resources</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Input
+                  type="text"
+                  placeholder="Search resources..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="mb-4"
+                />
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {filteredResources?.map((resource: any) => (
+                    <div key={resource._id} className="border p-3 rounded-lg">
+                      <h4 className="font-semibold">{resource.name}</h4>
+                      <p className="text-sm text-muted-foreground">{resource.topic}</p>
+                      <a href={resource.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline">
+                        View Resource
+                      </a>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Main Problem Area */}
-          <div className="lg:col-span-2">
-            {selectedQuestion ? (
-              <div className="space-y-6">
-                {/* Question Display */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      {selectedQuestion.topic} - {selectedQuestion.questionType}
-                      <Badge variant="outline">{selectedQuestion.difficulty}</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="prose max-w-none">
-                      <p className="text-base leading-relaxed">{selectedQuestion.questionText}</p>
-                    </div>
-                    
-                    {selectedQuestion.diagram && (
-                      <div className="mt-4">
-                        <h3 className="font-semibold mb-2">Diagram</h3>
-                        <div
-                          className="rounded-lg border p-4 bg-white"
-                          dangerouslySetInnerHTML={{ __html: selectedQuestion.diagram }}
-                        />
-                      </div>
-                    )}
-
-                    {selectedQuestion.choices && (
-                      <div className="space-y-2">
-                        <h4 className="font-medium">Answer Choices:</h4>
-                        <div className="grid gap-2">
-                          {selectedQuestion.choices.map((choice, index) => (
-                            <div key={index} className="flex items-start gap-2 p-2 border rounded">
-                              <span className="font-medium text-sm">
-                                {String.fromCharCode(65 + index)}.
-                              </span>
-                              <span className="text-sm">{choice}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Scratchpad */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Scratchpad
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Textarea
-                      placeholder="Work through the problem here... Show your calculations, thoughts, and approach."
-                      value={scratchpad}
-                      onChange={(e) => setScratchpad(e.target.value)}
-                      className="min-h-32 resize-none"
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Tabs for Tutor and Hints */}
-                <Tabs defaultValue="hints" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="hints" className="flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4" />
-                      Hints
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="tutor" 
-                      className="flex items-center gap-2"
-                      onClick={() => setShowChat(true)}
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      Ask Tutor
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="hints" className="mt-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Step-by-Step Hints</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Accordion type="single" collapsible className="w-full">
-                          {[0, 1, 2, 3, 4].map((hintIndex) => (
-                            <AccordionItem key={hintIndex} value={`hint-${hintIndex}`}>
-                              <AccordionTrigger className="text-left">
-                                Hint {hintIndex + 1}
-                                {hints[hintIndex] && (
-                                  <Badge variant="secondary" className="ml-2">
-                                    Available
-                                  </Badge>
-                                )}
-                              </AccordionTrigger>
-                              <AccordionContent>
-                                {hints[hintIndex] ? (
-                                  <div className="prose max-w-none">
-                                    <p>{hints[hintIndex]}</p>
-                                  </div>
-                                ) : (
-                                  <div className="space-y-3">
-                                    <p className="text-muted-foreground">
-                                      Click to generate a hint for this step.
-                                    </p>
-                                    <Button
-                                      onClick={() => handleGenerateHint(hintIndex)}
-                                      disabled={loadingHints[hintIndex]}
-                                      size="sm"
-                                    >
-                                      {loadingHints[hintIndex] ? (
-                                        <>
-                                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                          Generating...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Lightbulb className="h-4 w-4 mr-2" />
-                                          Generate Hint
-                                        </>
-                                      )}
-                                    </Button>
-                                  </div>
-                                )}
-                              </AccordionContent>
-                            </AccordionItem>
-                          ))}
-                        </Accordion>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-
-                  <TabsContent value="tutor" className="mt-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">AI Tutor Chat</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <ScrollArea className="h-96 border rounded-lg p-4">
-                            <div className="space-y-4">
-                              {chatMessages.length === 0 && (
-                                <div className="text-center text-muted-foreground py-8">
-                                  <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                  <p>Start a conversation with your AI tutor!</p>
-                                  <p className="text-sm">Ask questions about the problem, get explanations, or discuss your approach.</p>
-                                </div>
-                              )}
-                              {chatMessages.map((message, index) => (
-                                <div
-                                  key={index}
-                                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                                >
-                                  <div
-                                    className={`max-w-[80%] rounded-lg p-3 ${
-                                      message.role === "user"
-                                        ? "bg-primary text-primary-foreground"
-                                        : "bg-muted"
-                                    }`}
-                                  >
-                                    <p className="text-sm whitespace-pre-wrap">{message.text}</p>
-                                  </div>
-                                </div>
-                              ))}
-                              {isChatLoading && (
-                                <div className="flex justify-start">
-                                  <div className="bg-muted rounded-lg p-3">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  </div>
-                                </div>
-                              )}
-                              <div ref={chatEndRef} />
-                            </div>
-                          </ScrollArea>
-                          
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="Ask your tutor a question..."
-                              value={chatInput}
-                              onChange={(e) => setChatInput(e.target.value)}
-                              onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
-                              disabled={isChatLoading}
-                            />
-                            <Button 
-                              onClick={handleSendMessage} 
-                              disabled={!chatInput.trim() || isChatLoading}
-                              size="icon"
-                            >
-                              <Send className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                </Tabs>
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="flex items-center justify-center h-96">
-                  <div className="text-center">
-                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-medium">Select a Problem</p>
-                    <p className="text-muted-foreground">Choose a problem from the list to start solving</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Resources Sidebar */}
-          <div className="lg:col-span-1">
-            <Card>
+          {/* Right Column */}
+          <div className="flex flex-col gap-4 overflow-y-auto">
+            {/* Scratchpad */}
+            <Card className="flex-1 flex flex-col">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
-                  Resources
-                </CardTitle>
+                <CardTitle>Scratchpad</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <Input
-                  placeholder="Search resources..."
-                  value={resourceSearch}
-                  onChange={(e) => setResourceSearch(e.target.value)}
+              <CardContent className="flex-1 flex">
+                <Textarea
+                  placeholder="Use this space for your notes and calculations..."
+                  value={scratchpad}
+                  onChange={(e) => setScratchpad(e.target.value)}
+                  className="w-full h-full resize-none"
                 />
-                
-                <ScrollArea className="h-96">
-                  <div className="space-y-3">
-                    {filteredResources?.map((resource: any) => (
-                      <Card key={resource._id} className="p-3">
-                        <div className="space-y-2">
-                          <div className="flex items-start justify-between">
-                            <h4 className="font-medium text-sm line-clamp-2">
-                              {resource.name}
-                            </h4>
-                          </div>
-                          <div className="flex gap-1 flex-wrap">
-                            <Badge variant="outline" className="text-xs">
-                              {resource.type}
-                            </Badge>
-                            <Badge variant="secondary" className="text-xs">
-                              {resource.topic}
-                            </Badge>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => window.open(resource.url, '_blank')}
-                          >
-                            Open Resource
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
-                    
-                    {filteredResources?.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No resources found</p>
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {/* Hints */}
+            <Card className="flex-shrink-0">
+              <CardHeader>
+                <CardTitle>Hints</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Accordion type="single" collapsible className="w-full">
+                  {[...Array(3)].map((_, i) => (
+                    <AccordionItem value={`item-${i + 1}`} key={i}>
+                      <AccordionTrigger onClick={() => !hints[i] && handleGenerateHint(i)}>
+                        Hint {i + 1}
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        {hints[i] ? (
+                          <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                            {hints[i]}
+                          </ReactMarkdown>
+                        ) : (
+                          "Click to reveal hint."
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
               </CardContent>
             </Card>
           </div>
         </div>
-      </motion.div>
+      ) : (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-xl text-muted-foreground">Please select a problem to begin.</p>
+        </div>
+      )}
+
+      {/* Ask Tutor Button */}
+      {selectedQuestion && (
+        <Button 
+          className="fixed bottom-4 right-4"
+          onClick={() => setShowChat(!showChat)}
+        >
+          Ask Tutor
+        </Button>
+      )}
+
+      {/* Chat Overlay */}
+      {showChat && selectedQuestion && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="max-w-2xl w-full h-[80vh] flex flex-col m-4">
+            <CardHeader>
+              <CardTitle>Chat with your AI Tutor</CardTitle>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="absolute top-2 right-2"
+                onClick={() => setShowChat(false)}
+              >
+                ×
+              </Button>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-y-auto space-y-4">
+              {chatMessages.map((msg, index) => (
+                <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`p-3 rounded-lg max-w-lg ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      {msg.text}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              ))}
+              {isChatLoading && (
+                <div className="flex justify-start">
+                  <div className="p-3 rounded-lg bg-muted">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </CardContent>
+            <div className="p-4 border-t">
+              <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex gap-2">
+                <Input
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Ask a follow-up question..."
+                  className="flex-1"
+                />
+                <Button type="submit" disabled={isChatLoading}>Send</Button>
+              </form>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
