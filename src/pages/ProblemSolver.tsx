@@ -189,6 +189,25 @@ export default function ProblemSolver() {
                     {selectedQuestion.questionText}
                   </ReactMarkdown>
                 </div>
+                {selectedQuestion.choices && selectedQuestion.choices.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="font-semibold mb-2">Answer Choices</h3>
+                    <div className="space-y-2">
+                      {selectedQuestion.choices.map((choice, index) => (
+                        <div key={index} className="flex items-start gap-2 p-2 rounded border">
+                          <span className="font-medium text-sm min-w-[20px]">
+                            {String.fromCharCode(65 + index)}.
+                          </span>
+                          <div className="flex-1">
+                            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                              {choice}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {selectedQuestion.diagram && (
                   <div className="mt-4">
                     <h3 className="font-semibold mb-2">Diagram</h3>
