@@ -52,12 +52,14 @@ Generate hint ${args.hintIndex + 1}:`;
         throw new Error("GEMINI_API_KEY environment variable not set!");
       }
 
-      const { GoogleGenerativeAI } = await import("@google/generative-ai");
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const { GoogleGenAI } = await import("@google/genai");
+      const ai = new GoogleGenAI({ apiKey: apiKey });
 
-      const result = await model.generateContent(prompt);
-      return result.response.text();
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+      return response.text || "";
     } catch (error) {
       console.error("Error generating hint:", error);
       if (error instanceof Error) {
@@ -104,12 +106,14 @@ Respond to the student:`;
         throw new Error("GEMINI_API_KEY environment variable not set!");
       }
 
-      const { GoogleGenerativeAI } = await import("@google/generative-ai");
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const { GoogleGenAI } = await import("@google/genai");
+      const ai = new GoogleGenAI({ apiKey: apiKey });
 
-      const result = await model.generateContent(prompt);
-      return result.response.text();
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+      return response.text || "";
     } catch (error) {
       console.error("Error in AI chat:", error);
       if (error instanceof Error) {
