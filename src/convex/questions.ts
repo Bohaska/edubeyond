@@ -1,6 +1,6 @@
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { getCurrentUser } from "./users";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
