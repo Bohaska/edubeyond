@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/convex/_generated/api";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,8 +47,8 @@ export default function ProblemSolver() {
     selectedQuestionId ? { id: selectedQuestionId } : "skip"
   );
   const resources = useQuery(api.resources.list);
-  const generateHint = useMutation(api.questions.generateHint);
-  const chatWithAI = useMutation(api.questions.chatWithAI);
+  const generateHint = useAction(api.ai.generateHint);
+  const chatWithAI = useAction(api.ai.chatWithAI);
 
   const filteredResources = resources?.filter(resource =>
     resource.name.toLowerCase().includes(resourceSearch.toLowerCase()) ||
