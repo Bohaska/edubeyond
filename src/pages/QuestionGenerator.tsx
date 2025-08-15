@@ -296,6 +296,17 @@ export default function QuestionGenerator() {
                       {generatedQuestion.explanation}
                     </ReactMarkdown>
                   </div>
+                  {generatedQuestion.diagram && (
+                    <div>
+                      <h3 className="font-semibold">Diagram:</h3>
+                      <div
+                        className="mt-2 p-4 border rounded-lg bg-white"
+                        dangerouslySetInnerHTML={{
+                          __html: generatedQuestion.diagram,
+                        }}
+                      />
+                    </div>
+                  )}
                   <Button onClick={handleSaveQuestion} disabled={!user}>
                     Save to My Library
                   </Button>

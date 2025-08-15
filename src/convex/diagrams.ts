@@ -1,101 +1,52 @@
+"use node";
+import { internalAction } from "./_generated/server";
 import { v } from "convex/values";
-import { action, internalMutation, mutation } from "./_generated/server";
 import { GoogleGenAI } from "@google/genai";
 import { internal } from "./_generated/api";
-import { getCurrentUser } from "./users";
 
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-
-export const generateDiagram = action({
+export const generate = internalAction({
   args: {
-    questionId: v.id("questions"),
     questionText: v.string(),
+    questionId: v.id("questions"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, { questionText, questionId }) => {
+    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+
     const prompt = `
-      Based on the following AP Physics C question, generate a clean, simple, and clear SVG diagram that illustrates the problem.
+      You are a physics expert and an SVG artist. Your task is to create a simple, clean, and effective SVG diagram to illustrate the following AP Physics C problem.
 
-      **Instructions for the AI Model:**
-      1.  **Think Step-by-Step First:** Before generating the SVG, analyze the question to identify all necessary components for the diagram.
-      2.  **List Objects and Coordinates:** Create a logical plan. List the objects (e.g., blocks, planes, vectors), their coordinates (x, y), rotations, and required labels. Think logically about coordinate placement to ensure precise alignment.
-      3.  **SVG Styling Rules:**
-          -   Use font-family="Helvetica" and font-size="16" for all text labels.
-          -   Keep all strokes uniform with a stroke-width of 1.5.
-          -   Position all labels at least 10 pixels away from SVG edges or other objects for clarity.
-      4.  **Output Format:** The final output must be ONLY the SVG code, starting with <svg> and ending with </svg>. Do not include your step-by-step thinking process, just the final SVG. The style should be similar to diagrams found in College Board AP Physics materials.
+      **Problem:**
+      ${questionText}
 
-      **Question:** "${args.questionText}"
+      **Instructions:**
+      1.  **Analyze the problem:** Identify the key objects, forces, and interactions described.
+      2.  **Design a clear diagram:** Create a 2D, line-art style diagram. Use basic shapes (circles, rectangles, lines, arrows).
+      3.  **Keep it simple:** Do not use gradients, shadows, or complex effects. Use a limited color palette (e.g., black for objects, blue for velocity vectors, red for force vectors, green for acceleration vectors).
+      4.  **Labeling:** Label important components clearly (e.g., 'm1', 'v', 'F_g', 'θ'). Use standard physics notation.
+      5.  **SVG Code:** Output *only* the SVG code, starting with \`<svg ...>\` and ending with \`</svg>\`. Do not include any other text, explanations, or markdown formatting. The SVG should be self-contained and have a transparent background. Ensure the viewBox is set appropriately to frame the content.
 
-      **Internal Thinking Process (for you to plan, not for final output):**
-      - Object 1: [description, coordinates, rotation, label]
-      - Object 2: [description, coordinates, rotation, label]
-      - ...
+      **Example Output:**
+      \`\`\`xml
+      <svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="180" width="300" height="20" fill="#d3d3d3" />
+        <rect x="100" y="130" width="50" height="50" fill="black" />
+        <line x1="125" y1="130" x2="125" y2="80" stroke="black" />
+        <circle cx="125" cy="80" r="20" fill="black" />
+        <text x="150" y="175" font-family="Arial" font-size="16">m1</text>
+        <text x="150" y="75" font-family="Arial" font-size="16">m2</text>
+      </svg>
+      \`\`\`
 
-      **Final Output (SVG code only):**
+      Generate the SVG for the provided problem.
     `;
 
-    try {
-      const result = await genAI.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-      });
-      const svgText = result.text;
+    const result = await genAI.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+    const response = result.response;
+    const svgCode = response.text().trim().replace(/\n/g, '');
 
-      // Clean the response to ensure it's valid SVG
-      const svgMatch = svgText?.match(/<svg[\s\S]*?<\/svg>/);
-      if (!svgMatch) {
-        throw new Error("No valid SVG found in the AI response.");
-      }
-      const diagram = svgMatch[0];
-
-      await ctx.runMutation(internal.diagrams.saveDiagram, {
-        questionId: args.questionId,
-        diagram,
-      });
-
-      return diagram;
-    } catch (error) {
-      console.error("Error generating diagram with Gemini:", error);
-      if (error instanceof Error) {
-        throw new Error(`AI Diagram Generation Failed: ${error.message}`);
-      }
-      throw new Error(
-        "Failed to generate diagram using AI due to an unknown error.",
-      );
-    }
-  },
-});
-
-export const saveDiagram = internalMutation({
-  args: {
-    questionId: v.id("questions"),
-    diagram: v.string(),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.questionId, { diagram: args.diagram });
-    return null;
-  },
-});
-
-export const removeDiagram = mutation({
-  args: {
-    questionId: v.id("questions"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-    if (!user) {
-      throw new Error("User must be authenticated to remove diagrams");
-    }
-
-    // Verify the user owns this question
-    const question = await ctx.db.get(args.questionId);
-    if (!question || question.createdBy !== user._id) {
-      throw new Error("You can only remove diagrams from your own questions");
-    }
-
-    await ctx.db.patch(args.questionId, { diagram: undefined });
-    return null;
+    return svgCode;
   },
 });

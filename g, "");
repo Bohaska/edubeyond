@@ -1,96 +1,43 @@
-      }
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
-      // Clean the response to ensure it's a valid JSON string
-      text = text.replace(/[\u0000-\u001F]+/g, "").trim();
+const prompt = `
+  You are a physics expert and an SVG artist. Your task is to create a simple, clean, and effective SVG diagram to illustrate the following AP Physics C problem.
 
-      const jsonString = text.includes("{") ? text.substring(text.indexOf("{")) : text;
-      const data = JSON.parse(jsonString);
+  **Problem:**
+  ${questionText}
 
-      // For MCQ, ensure choices and correctChoice are aligned
-      if (questionType === "MCQ") {
-        // Verify choices array length
-        if (!Array.isArray(data.choices) || data.choices.length !== 4) {
-          throw new Error("Invalid choices format");
-        }
-        if (!["A", "B", "C", "D"].includes(data.correctChoice)) {
-          throw new Error("Invalid correctChoice value");
-        }
-        // Map choices labels if necessary
-        // assuming choices come with options labeled A-D
-      }
+  **Instructions:**
+  1.  **Analyze the problem:** Identify the key objects, forces, and interactions described.
+  2.  **Design a clear diagram:** Create a 2D, line-art style diagram. Use basic shapes (circles, rectangles, lines, arrows).
+  3.  **Keep it simple:** Do not use gradients, shadows, or complex effects. Use a limited color palette (e.g., black for objects, blue for velocity vectors, red for force vectors, green for acceleration vectors).
+  4.  **Labeling:** Label important components clearly (e.g., 'm1', 'v', 'F_g', 'θ'). Use standard physics notation.
+  5.  **SVG Code:** Output *only* the SVG code, starting with \`<svg ...>\` and ending with \`</svg>\`. Do not include any other text, explanations, or markdown formatting. The SVG should be self-contained and have a transparent background. Ensure the viewBox is set appropriately to frame the content.
 
-      return {
-        questionText: data.questionText,
-        answer: data.answer,
-        explanation: data.explanation,
-        choices: data.choices,
-        correctChoice: data.correctChoice,
-      };
-    } catch (error) {
-      console.error("Error generating content with Gemini:", error);
-      if (error instanceof Error) {
-        throw new Error(`AI Content Generation Failed: ${error.message}`);
-      }
-      throw new Error("Failed to generate question using AI due to an unknown error.");
-    }
-  },
+  **Example Output:**
+  \`\`\`xml
+  <svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="180" width="300" height="20" fill="#d3d3d3" />
+    <rect x="100" y="130" width="50" height="50" fill="black" />
+    <line x1="125" y1="130" x2="125" y2="80" stroke="black" />
+    <circle cx="125" cy="80" r="20" fill="black" />
+    <text x="150" y="175" font-family="Arial" font-size="16">m1</text>
+    <text x="150" y="75" font-family="Arial" font-size="16">m2</text>
+  </svg>
+  \`\`\`
+
+  Generate the SVG for the provided problem.
+`;
+
+const result = await genAI.models.generateContent({
+  model: "gemini-2.5-flash",
+  contents: prompt,
 });
-=======
-export const generateQuestion = action({
-  args: {
-    topic: v.string(),
-    questionType: v.string(),
-    difficulty: v.string(),
-  },
-  returns: v.object({
-    questionText: v.string(),
-    answer: v.string(),
-    explanation: v.string(),
-    choices: v.optional(v.array(v.string())),
-    correctChoice: v.optional(v.string()),
-  }),
-  handler: async (ctx, args) => {
-    const { topic, questionType, difficulty } = args;
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    let prompt = "";
-    if (questionType === "MCQ") {
-      prompt = `Generate a ${difficulty} multiple-choice question for AP Physics C about ${topic}. 
-      
-      IMPORTANT: Return ONLY a valid JSON object with exactly these keys:
-      - "questionText": the question as a string
-      - "choices": an array of exactly 4 strings (A, B, C, D options)
-      - "correctChoice": a single letter string ("A", "B", "C", or "D")
-      - "explanation": detailed explanation as a string
-      
-      Example format:
-      {"questionText":"What is the acceleration due to gravity?","choices":["9.8 m/s²","10 m/s²","8.9 m/s²","11 m/s²"],"correctChoice":"A","explanation":"The standard acceleration due to gravity on Earth is 9.8 m/s²."}
-      
-      Return ONLY the JSON object, no other text.`;
-    } else {
-      prompt = `Generate a ${difficulty} free-response question for AP Physics C about ${topic}. 
-      
-      IMPORTANT: Return ONLY a valid JSON object with exactly these keys:
-      - "questionText": the question as a string
-      - "answer": the final numerical/text answer as a string
-      - "explanation": detailed step-by-step solution as a string
-      
-      Example format:
-      {"questionText":"Calculate the force needed to accelerate a 5kg object at 2 m/s².","answer":"10 N","explanation":"Using F = ma, F = 5 kg × 2 m/s² = 10 N"}
-      
-      Return ONLY the JSON object, no other text.`;
-    }
+const svgCode = result.text?.trim().replace(/\n/g, '');
 
-    try {
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      let text = response.text().trim();
+await ctx.runMutation(internal.questions.addDiagramToQuestion, {
+  questionId,
+  diagram: svgCode,
+});
 
-      // Log the raw response for debugging
-      console.log("Raw Gemini response:", text);
-
-      // Try to extract JSON more carefully
-      let jsonText = text;
-      
-      // Remove markdown code blocks if present
-      if (text.includes('
+return svgCode;

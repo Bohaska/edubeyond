@@ -1,7 +1,9 @@
+import { action, internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { query, mutation, action } from "./_generated/server";
+import { GoogleGenAI } from "@google/genai";
 import { getCurrentUser } from "./users";
-import { GoogleGenAI, Type } from "@google/genai";
+import { Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 
 export const getById = query({
   args: { id: v.id("questions") },
@@ -37,8 +39,32 @@ export const saveQuestion = mutation({
     createdBy: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const questionId = await ctx.db.insert("questions", args);
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+    const { ...questionData } = args;
+    const questionId = await ctx.db.insert("questions", {
+      ...questionData,
+      createdBy: user._id,
+    });
+
+    await ctx.scheduler.runAfter(0, internal.diagrams.generate, {
+      questionText: args.questionText,
+      questionId: questionId,
+    });
+
     return questionId;
+  },
+});
+
+export const addDiagramToQuestion = internalMutation({
+  args: {
+    questionId: v.id("questions"),
+    diagram: v.string(),
+  },
+  handler: async (ctx, { questionId, diagram }) => {
+    await ctx.db.patch(questionId, { diagram });
   },
 });
 
@@ -66,57 +92,9 @@ export const generateQuestion = action({
       - Ensure the question and explanation are formatted with LaTeX for mathematical expressions where appropriate (e.g., using $...$ for inline and $$...$$ for block equations).
     `;
 
-    const isMCQ = args.questionType === "MCQ";
-
-    const baseSchema = {
-      type: Type.OBJECT,
-      properties: {
-        questionText: {
-          type: Type.STRING,
-          description:
-            "The text of the question, including any necessary context or diagrams described in text. Use LaTeX for equations.",
-        },
-        explanation: {
-          type: Type.STRING,
-          description:
-            "A detailed, step-by-step explanation for the correct answer. Use LaTeX for equations.",
-        },
-      },
-    };
-
-    const mcqSchema = {
-      ...baseSchema,
-      properties: {
-        ...baseSchema.properties,
-        choices: {
-          type: Type.ARRAY,
-          description:
-            "An array of 4 strings representing the multiple-choice options.",
-          items: {
-            type: Type.STRING,
-          },
-        },
-        correctChoice: {
-          type: Type.STRING,
-          description:
-            "The string from the 'choices' array that is the correct answer.",
-        },
-      },
-      required: ["questionText", "explanation", "choices", "correctChoice"],
-    };
-
-    const frqSchema = {
-      ...baseSchema,
-      required: ["questionText", "explanation"],
-    };
-
     const result = await genAI.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: isMCQ ? mcqSchema : frqSchema,
-      },
     });
 
     const text = result.text;
