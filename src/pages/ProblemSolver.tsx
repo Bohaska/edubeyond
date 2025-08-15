@@ -92,9 +92,10 @@ export default function ProblemSolver() {
     }
   };
 
-  const handleGenerateHint = async (hintIndex: number) => {
+  const handleGenerateHint = async () => {
     if (!selectedQuestion) return;
 
+    const hintIndex = hints.length;
     setLoadingHints(prev => ({ ...prev, [hintIndex]: true }));
 
     try {
@@ -103,20 +104,20 @@ export default function ProblemSolver() {
         choices: selectedQuestion.choices,
         explanation: selectedQuestion.explanation,
         scratchpad: scratchpad,
-        previousHints: hints.slice(0, hintIndex)
+        previousHints: hints,
       };
 
       const hint = await generateHint({
         questionId: selectedQuestion._id,
         hintIndex,
-        context: JSON.stringify(context)
+        context: JSON.stringify(context),
       });
 
-      setHints(prev => {
-        const newHints = [...prev];
-        newHints[hintIndex] = hint ?? "No hint available";
-        return newHints;
-      });
+      if (hint) {
+        setHints(prev => [...prev, hint]);
+      } else {
+        toast.info("No more hints available for this problem.");
+      }
     } catch (error) {
       toast.error("Failed to generate hint");
       console.error("Hint generation error:", error);
@@ -251,24 +252,23 @@ export default function ProblemSolver() {
                 <CardTitle>Hints</CardTitle>
               </CardHeader>
               <CardContent>
-                <Accordion type="single" collapsible className="w-full">
-                  {[...Array(3)].map((_, i) => (
-                    <AccordionItem value={`item-${i + 1}`} key={i}>
-                      <AccordionTrigger onClick={() => !hints[i] && handleGenerateHint(i)}>
-                        Hint {i + 1}
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        {hints[i] ? (
-                          <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                            {hints[i]}
-                          </ReactMarkdown>
-                        ) : (
-                          "Click to reveal hint."
-                        )}
-                      </AccordionContent>
-                    </AccordionItem>
+                <div className="space-y-2">
+                  {hints.map((hint, index) => (
+                    <div key={index} className="p-3 rounded-lg bg-muted">
+                      <p className="font-semibold">Hint {index + 1}</p>
+                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        {hint}
+                      </ReactMarkdown>
+                    </div>
                   ))}
-                </Accordion>
+                </div>
+                <Button
+                  onClick={() => handleGenerateHint()}
+                  disabled={loadingHints[hints.length]}
+                  className="mt-4 w-full"
+                >
+                  {loadingHints[hints.length] ? <Loader2 className="h-4 w-4 animate-spin" /> : "Get a Hint"}
+                </Button>
               </CardContent>
             </Card>
           </div>
